@@ -60,30 +60,58 @@
     </div>
   </main>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="kiv-cloud.js"></script>
 <script src="app.js"></script>
 <script>
-  document.getElementById('registerForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var name = document.getElementById('name').value.trim();
-    var profileType = document.getElementById('profileType').value;
-    var email = document.getElementById('email').value.trim();
-    var pass = document.getElementById('password').value;
-    var terms = document.getElementById('terms').checked;
+  (function () {
+    var form = document.getElementById('registerForm');
     var msg = document.getElementById('msg');
+    var submit = form.querySelector('button[type="submit"]');
 
-    if (name.length < 2) { msg.className = 'msg err'; msg.textContent = 'Escribe tu nombre.'; return; }
-    if (!profileType) { msg.className = 'msg err'; msg.textContent = 'Selecciona un perfil.'; return; }
-    if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { msg.className = 'msg err'; msg.textContent = 'Escribe un correo válido.'; return; }
-    if (pass.length < 6) { msg.className = 'msg err'; msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
-    if (!terms) { msg.className = 'msg err'; msg.textContent = 'Debes aceptar los términos.'; return; }
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = document.getElementById('name').value.trim();
+      var profileType = document.getElementById('profileType').value;
+      var email = document.getElementById('email').value.trim();
+      var pass = document.getElementById('password').value;
+      var terms = document.getElementById('terms').checked;
 
-    var res = KIV.register(name, profileType, email, pass);
-    if (!res.ok) { msg.className = 'msg err'; msg.textContent = res.error; return; }
+      if (name.length < 2) { msg.className = 'msg err'; msg.textContent = 'Escribe tu nombre.'; return; }
+      if (!profileType) { msg.className = 'msg err'; msg.textContent = 'Selecciona un perfil.'; return; }
+      if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) { msg.className = 'msg err'; msg.textContent = 'Escribe un correo válido.'; return; }
+      if (pass.length < 6) { msg.className = 'msg err'; msg.textContent = 'La contraseña debe tener al menos 6 caracteres.'; return; }
+      if (!terms) { msg.className = 'msg err'; msg.textContent = 'Debes aceptar los términos.'; return; }
 
-    KIV.setUser(res.user, true);
-    msg.className = 'msg ok'; msg.textContent = '¡Cuenta creada! Vamos al test…';
-    setTimeout(function () { window.location.href = 'exam.html'; }, 700);
-  });
+      submit.disabled = true;
+      msg.className = 'msg';
+      msg.textContent = 'Creando tu cuenta…';
+
+      KIV.register(name, profileType, email, pass).then(function (res) {
+        if (!res.ok) {
+          submit.disabled = false;
+          msg.className = 'msg err';
+          msg.textContent = res.error || 'No se pudo crear la cuenta.';
+          return;
+        }
+        if (res.needsConfirmation) {
+          msg.className = 'msg ok';
+          msg.textContent = '¡Cuenta creada! Revisa tu correo y confirma tu cuenta para entrar.';
+          form.reset();
+          submit.disabled = false;
+          return;
+        }
+        msg.className = 'msg ok';
+        msg.textContent = '¡Cuenta creada! Vamos al test…';
+        window.location.href = 'exam.html';
+      }).catch(function () {
+        submit.disabled = false;
+        msg.className = 'msg err';
+        msg.textContent = 'No se pudo conectar con el servidor. Inténtalo de nuevo.';
+      });
+    });
+  })();
 </script>
 </body>
 </html>

@@ -1,15 +1,16 @@
 # Backend Supabase de Kivhora
 
-Este directorio contiene la base del backend real. El frontend actual sigue usando
-`localStorage`; la conexión se hará cuando el proyecto de Supabase esté configurado y
-se pruebe el flujo completo.
+El frontend ya está conectado a Supabase: `login`, `registro`, `dashboard`, `exam`,
+`lesson` y `practica` leen y escriben mediante `kiv-cloud.js`. Para que funcione, el
+proyecto debe tener aplicado el esquema de `migrations/` y `../supabase-config.js`
+debe contener la URL y la publishable/anon key.
 
 ## 1. Crear el proyecto
 
 1. Crea un proyecto en [supabase.com](https://supabase.com).
 2. Copia de **Project Settings → API**:
    - `Project URL`
-   - `anon public` key
+   - publishable key (o `anon public` en proyectos antiguos)
 3. Pega ambos valores en `../supabase-config.js`.
 
 No uses la `service_role` key en el navegador.
@@ -47,12 +48,12 @@ En **Authentication → Providers → Email**:
   - Site URL: el dominio real de Kivhora.
   - Redirect URLs: el dominio real y `http://localhost:PUERTO` para desarrollo.
 
-## 4. Crear la cuenta demo
+## 4. Crear la cuenta demo (opcional)
 
 En **Authentication → Users → Add user**:
 
 - Email: `demo@kivhora.com`
-- Password: `kivhora123`
+- Password: elige una propia y no la publiques
 - User Metadata:
 
 ```json
@@ -135,18 +136,29 @@ Prueba rápida de RLS:
    devolver vacío.
 2. Con sesión, solo deben aparecer las filas del usuario autenticado.
 
-## 8. Siguiente paso de integración
+## 8. Estado de la integración
 
-Con la URL y la anon key configuradas, hay que adaptar el frontend:
+Ya implementado en el frontend:
 
-1. Cargar Supabase JS + `supabase-config.js` + `kiv-cloud.js` en las páginas.
-2. Reemplazar el registro/login local por `KIVCloud.signUp` / `KIVCloud.signIn`.
-3. Hacer asíncronos `requireAuth`, `getProgress` y las páginas que los consumen.
-4. Sustituir `saveProgress`, `addXP`, `touchStreak`, `completeExam` y `completeLesson`
-   por las RPC.
-5. Eliminar el seed local y la autenticación con hash del navegador.
-6. Probar registro, confirmación de correo, examen, cadena de 8 lecciones, práctica,
-   perfil y cierre de sesión.
+1. Supabase JS + `supabase-config.js` + `kiv-cloud.js` se cargan en todas las páginas
+   de la app.
+2. `login.html` / `registro.html` usan `KIVCloud.signIn` / `signUp`; registro maneja
+   confirmación de correo.
+3. Las páginas protegidas esperan `KIV.ready(user, progress)`; ya no hay
+   `requireAuth` síncrono ni progreso local.
+4. Las escrituras usan `complete_lesson`, `complete_exam`, `save_practice` y
+   `update_profile`. Se eliminó el seed local y el hash de contraseñas.
+5. El examen registra también los intentos reprobados (sin XP).
+6. "Mantener sesión" usa `localStorage`; sin marcarlo, `sessionStorage`.
+
+Pendiente de verificar contra el proyecto real (requiere el esquema aplicado):
+
+- Registro + login + logout, con y sin confirmación de correo.
+- Examen aprobado y reprobado, incluido el reintento sin XP duplicado.
+- Cadena de 8 lecciones y bloqueos.
+- Límite de 2 prácticas con XP al día.
+- Edición de perfil y avatar.
+- RLS con una segunda cuenta.
 
 ## 9. Comprobaciones mínimas antes de producción
 

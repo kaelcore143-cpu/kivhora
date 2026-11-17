@@ -134,12 +134,13 @@
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="kiv-cloud.js"></script>
 <script src="app.js"></script>
 <script>
 (function () {
-  var user = KIV.requireAuth();
-  if (!user) return;
-
+  KIV.ready(function (user) {
   var EXAM_DATA = [
     {
       text: "En el bosque de las luces vive Lila, una niña pequeña. Una mañana encuentra una llave dorada junto a un árbol. La llave tiene una estrella dibujada. Lila camina hasta una puerta azul que nunca había visto. La puerta está cerrada. Detrás se escucha un ruido suave, como un cachorro. Lila duda un momento. Mira la llave y luego la puerta. Su amiga Luna le dice: «Ábrela, pero despacio». Lila gira la llave. La puerta se abre y aparece un dragón diminuto que tiembla de frío. Lila sonríe y lo cubre con su bufanda. Entonces el dragón mueve la cola.",
@@ -318,6 +319,8 @@
         msg = 'Tuviste ' + score + ' aciertos, ¡pero leíste muy lento!<br><br>Necesitas al menos <strong>100 PPM</strong>. Tu velocidad: <strong>' + ppm + ' PPM</strong>.';
       }
       document.getElementById('failedQuizMsg').innerHTML = msg;
+      // El intento fallido también se registra en el servidor (sin XP).
+      KIV.completeExam(ppm, elapsed, score);
       show('failedQuiz');
       return; // Detiene la ejecución
     }
@@ -332,15 +335,23 @@
     document.getElementById('statTime').textContent = elapsed.toFixed(1) + 's';
     document.getElementById('statPPM').textContent = ppm;
 
-    KIV.completeExam(ppm, elapsed, score);
-    
-    var xpBase = 60;
-    var xpVelocidad = ppm >= 300 ? 40 : ppm >= 200 ? 25 : 10;
-    var xpQuiz = score * 5;
-    var totalXP = xpBase + xpVelocidad + xpQuiz;
-    
-    KIV.toast('¡Evaluación superada! +' + totalXP + ' XP');
-    show('result');
+    KIV.completeExam(ppm, elapsed, score).then(function (res) {
+      if (!res.ok) {
+        document.getElementById('failedQuizMsg').innerHTML =
+          'No pudimos guardar tu resultado: ' + KIV.esc(res.error || 'error de conexión') +
+          '.<br><br>Revisa tu conexión e inténtalo de nuevo.';
+        show('failedQuiz');
+        return;
+      }
+      KIV.toast(res.xpGained > 0
+        ? '¡Evaluación superada! +' + res.xpGained + ' XP'
+        : '¡Evaluación superada! Sin XP extra: ya la habías aprobado.');
+      show('result');
+    }).catch(function () {
+      document.getElementById('failedQuizMsg').innerHTML =
+        'No pudimos guardar tu resultado por un problema de conexión.<br><br>Inténtalo de nuevo.';
+      show('failedQuiz');
+    });
   }
 
   function reset() {
@@ -352,6 +363,7 @@
   
   document.getElementById('retryBtnFailed').addEventListener('click', reset);
   document.getElementById('retryBtnFailedQuiz').addEventListener('click', reset);
+  });
 })();
 </script>
 </body>

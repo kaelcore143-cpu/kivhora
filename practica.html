@@ -157,13 +157,13 @@
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="kiv-cloud.js"></script>
 <script src="app.js"></script>
 <script>
 (function () {
-  var user = KIV.requireAuth();
-  if (!user) return;
-
-  var initialProgress = KIV.getProgress(user.email);
+  KIV.ready(function (user, initialProgress) {
   if (!initialProgress.examDone) {
     window.location.href = 'exam.html';
     return;
@@ -289,19 +289,21 @@
     document.getElementById('statTime').textContent = Math.round(elapsedSec) + 's';
     document.getElementById('statPPM').textContent = ppm;
 
-    // Dar XP (base 30 + bonus por velocidad)
-    var xpEarned = 30 + (multiplier > 1 ? 10 : 0) + (multiplier > 2 ? 20 : 0);
-    
-    // Guardar progreso
-    var p = KIV.getProgress(user.email);
-    KIV.touchStreak(p);
-    KIV.addXP(p, xpEarned);
-    // Añadir al historial
-    p.history.push({ type: 'practice', ppm: ppm, date: KIV.todayISO() });
-    KIV.saveProgress(user.email, p);
-
-    KIV.toast('¡Práctica guardada! +' + xpEarned + ' XP');
-    show('result');
+    // El servidor calcula el XP y aplica el límite de 2 prácticas con XP al día.
+    KIV.savePractice(ppm, multiplier).then(function (res) {
+      if (!res.ok) {
+        KIV.toast(res.error || 'No se pudo guardar la práctica.');
+        show('result');
+        return;
+      }
+      KIV.toast(res.xpGained > 0
+        ? '¡Práctica guardada! +' + res.xpGained + ' XP'
+        : 'Práctica guardada. Límite diario de XP alcanzado.');
+      show('result');
+    }).catch(function () {
+      KIV.toast('No se pudo conectar con el servidor.');
+      show('result');
+    });
   }
 
   function reset() {
@@ -311,6 +313,7 @@
 
   document.getElementById('startBtn').addEventListener('click', startAnimation);
   document.getElementById('retryBtn').addEventListener('click', reset);
+  });
 })();
 </script>
 </body>

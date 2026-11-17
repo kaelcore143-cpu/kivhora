@@ -286,16 +286,14 @@
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="kiv-cloud.js"></script>
 <script src="app.js"></script>
 <script src="lecciones.js"></script>
 <script>
 (function () {
-  var user = KIV.requireAuth();
-  if (!user) return;
-
-  var p = KIV.getProgress(user.email);
-  KIV.touchStreak(p);
-  KIV.saveProgress(user.email, p);
+  KIV.ready(function (user, p) {
 
   /* Letras de fondo */
   var bgLetters = document.getElementById('bgLetters');
@@ -390,13 +388,8 @@
   /* Modal de Perfil */
   var modal = document.getElementById('profileModal');
   var profileNameInput = document.getElementById('profileName');
-  var selectedAvatar = '🦦';
+  var selectedAvatar = user.avatar || '🦦';
 
-  var profiles = JSON.parse(localStorage.getItem('leomas_profiles') || '{}');
-  if (profiles[user.email] && profiles[user.email].avatar) {
-    selectedAvatar = profiles[user.email].avatar.value;
-  }
-  
   document.querySelectorAll('.avatar-opt').forEach(function(btn) {
     if(btn.getAttribute('data-avatar') === selectedAvatar) {
       btn.classList.add('selected');
@@ -420,13 +413,16 @@
   document.getElementById('saveProfileBtn').addEventListener('click', function() {
     var newName = profileNameInput.value.trim();
     if (newName.length < 2) { KIV.toast('El nombre es muy corto'); return; }
-    
-    KIV.updateProfile(newName, selectedAvatar);
-    KIV.toast('¡Perfil actualizado!');
-    modal.classList.remove('active');
-    setTimeout(function() { window.location.reload(); }, 800);
+
+    KIV.updateProfile(newName, selectedAvatar).then(function (res) {
+      if (!res.ok) { KIV.toast(res.error || 'No se pudo actualizar el perfil'); return; }
+      KIV.toast('¡Perfil actualizado!');
+      modal.classList.remove('active');
+      setTimeout(function() { window.location.reload(); }, 800);
+    });
   });
 
+  });
 })();
 </script>
 </body>

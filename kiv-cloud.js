@@ -33,12 +33,17 @@ var KIVCloud = (function () {
       throw new Error('supabase_not_configured');
     }
     if (!client) {
+      var authOptions = {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      };
+      /* app.js define este adaptador para respetar "mantener sesión". */
+      if (window.KIV_AUTH_STORAGE) {
+        authOptions.storage = window.KIV_AUTH_STORAGE;
+      }
       client = window.supabase.createClient(config().url, config().anonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        }
+        auth: authOptions
       });
     }
     return client;
@@ -148,6 +153,10 @@ var KIVCloud = (function () {
     if (!isConfigured()) {
       return Promise.resolve({ ok: false, error: 'Supabase no está configurado.', code: 'supabase_not_configured' });
     }
+    /* Las confirmaciones por correo vuelven a login.html, que ya sabe leer el token. */
+    var redirectTo;
+    try { redirectTo = new URL('login.html', window.location.href).href; } catch (e) { redirectTo = undefined; }
+
     return getClient().auth.signUp({
       email: String(email || '').trim().toLowerCase(),
       password: password,
@@ -155,7 +164,8 @@ var KIVCloud = (function () {
         data: {
           name: String(name || '').trim(),
           profile_type: profileType
-        }
+        },
+        emailRedirectTo: redirectTo
       }
     }).then(function (result) {
       if (result.error) return failure(result.error);

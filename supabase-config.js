@@ -12,6 +12,6 @@
    NUNCA pongas aquí la clave "service_role".
    ============================================================ */
 window.KIV_SUPABASE = {
-  url: '',
-  anonKey: ''
+  url: 'https://plazqnnhrhlhypxbtlkt.supabase.co',
+  anonKey: 'sb_publishable_aJU719qnsUKEcMxHTjOhJA_FZphCaFw'
 };

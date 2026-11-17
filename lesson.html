@@ -35,45 +35,59 @@
   </div>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="kiv-cloud.js"></script>
 <script src="app.js"></script>
 <script src="lecciones.js"></script>
 <script>
 (function () {
-  var user = KIV.requireAuth();
-  if (!user) return;
+  KIV.ready(function (user, p) {
+    var params = new URLSearchParams(window.location.search);
+    var n = parseInt(params.get('lesson'), 10) || 1;
+    var lesson = KIV_LESSONS[n];
 
-  var params = new URLSearchParams(window.location.search);
-  var n = parseInt(params.get('lesson'), 10) || 1;
-  var lesson = KIV_LESSONS[n];
-  
-  if (!lesson) { window.location.href = 'dashboard.html'; return; }
+    if (!lesson) { window.location.href = 'dashboard.html'; return; }
 
-  var p = KIV.getProgress(user.email);
-  if (!KIV.isLessonUnlocked(n, p)) {
-    document.getElementById('mainCard').innerHTML = '<h2 class="text-center">Lección bloqueada</h2><p class="text-center muted">Completa la lección anterior en el panel principal.</p>';
-    return;
-  }
-
-  var card = document.getElementById('mainCard');
-  var xpEarned = 0;
-
-  // Función central: Siempre vuelve al panel
-  function returnToDashboard() {
-    window.location.href = 'dashboard.html';
-  }
-
-  function saveProgress(xp) {
-    var prog = KIV.getProgress(user.email);
-    var isNew = prog.lessonsDone.indexOf(n) === -1;
-    KIV.touchStreak(prog);
-    if (isNew) {
-      KIV.addXP(prog, xp);
-      prog.lessonsDone.push(n);
+    if (!KIV.isLessonUnlocked(n, p)) {
+      document.getElementById('mainCard').innerHTML = '<h2 class="text-center">Lección bloqueada</h2><p class="text-center muted">Completa la lección anterior en el panel principal.</p>';
+      return;
     }
-    prog.history.push({ type: lesson.type, lesson: n, date: KIV.todayISO() });
-    KIV.saveProgress(user.email, prog);
-    KIV.toast(isNew ? '¡+' + xp + ' XP Ganados!' : 'Lección repasada');
-  }
+
+    var card = document.getElementById('mainCard');
+
+    // Función central: Siempre vuelve al panel
+    function returnToDashboard() {
+      window.location.href = 'dashboard.html';
+    }
+
+    /**
+     * Completa la lección en el servidor y luego navega.
+     * opts: { ppm, quizOk, seconds, redirectTo }
+     */
+    function finishLesson(opts) {
+      opts = opts || {};
+      var button = opts.button;
+      if (button) button.disabled = true;
+
+      KIV.completeLesson(n, {
+        ppm: opts.ppm || p.lastPPM || 0,
+        quizOk: !!opts.quizOk,
+        seconds: opts.seconds || 0
+      }).then(function (res) {
+        if (!res.ok) {
+          if (button) button.disabled = false;
+          KIV.toast(res.error || 'No se pudo guardar la lección.');
+          return;
+        }
+        if (res.xpGained > 0) KIV.toast('¡+' + res.xpGained + ' XP Ganados!');
+        else KIV.toast('Lección repasada');
+        if (opts.redirectTo) window.location.href = opts.redirectTo;
+      }).catch(function () {
+        if (button) button.disabled = false;
+        KIV.toast('No se pudo conectar con el servidor.');
+      });
+    }
 
   // --- TIPOS DE LECCIÓN ---
   if (lesson.type === 'validation') {
@@ -95,9 +109,9 @@
       </div>
       <button class="btn-3d btn-full" id="nextBtn">Volver al panel</button>
     `;
-    document.getElementById('nextBtn').onclick = function() {
-      saveProgress(10);
-      returnToDashboard();
+    var validationBtn = document.getElementById('nextBtn');
+    validationBtn.onclick = function() {
+      finishLesson({ ppm: ppm, quizOk: true, seconds: 0, redirectTo: 'dashboard.html', button: validationBtn });
     };
   }
 
@@ -127,16 +141,21 @@
         b.textContent = opt;
         b.onclick = function() {
           opts.querySelectorAll('button').forEach(function(x){x.disabled=true;});
-          if (idx === lesson.memoryQ.answer) {
+          var correct = idx === lesson.memoryQ.answer;
+          if (correct) {
             b.classList.add('correct');
-            xpEarned = 20;
           } else {
             b.classList.add('wrong');
             opts.querySelectorAll('button')[lesson.memoryQ.answer].classList.add('correct');
-            xpEarned = 10;
           }
-          saveProgress(xpEarned);
-          setTimeout(returnToDashboard, 1500);
+          setTimeout(function () {
+            finishLesson({
+              ppm: p.lastPPM || 100,
+              quizOk: correct,
+              seconds: 0,
+              redirectTo: 'dashboard.html'
+            });
+          }, 1500);
         };
         opts.appendChild(b);
       });
@@ -176,8 +195,12 @@
           requestAnimationFrame(animate);
         } else {
           // La lectura se marca como completada antes de pasar a la comprensión literal.
-          saveProgress(20);
-          window.location.href = 'lesson.html?lesson=' + (n + 1);
+          finishLesson({
+            ppm: 110,
+            quizOk: true,
+            seconds: Math.round(totalSeconds),
+            redirectTo: 'lesson.html?lesson=' + (n + 1)
+          });
         }
       }
       requestAnimationFrame(animate);
@@ -213,7 +236,7 @@
           b.classList.add('correct');
           msg.className = 'msg ok';
           msg.textContent = '¡Correcto! ' + lesson.quiz.explain;
-          saveProgress(30);
+          finishLesson({ ppm: p.lastPPM || 100, quizOk: true, seconds: 0 });
           document.getElementById('actionButtons').style.display = 'block';
           document.getElementById('btnBack').onclick = returnToDashboard;
         } else {
@@ -249,9 +272,9 @@
       </div>
       <button class="btn-3d btn-full" id="nextBtn">Reclamar y volver al panel</button>
     `;
-    document.getElementById('nextBtn').onclick = function() {
-      saveProgress(50);
-      returnToDashboard();
+    var rewardBtn = document.getElementById('nextBtn');
+    rewardBtn.onclick = function() {
+      finishLesson({ ppm: p.lastPPM || 100, quizOk: true, seconds: 0, redirectTo: 'dashboard.html', button: rewardBtn });
     };
   }
 
@@ -266,9 +289,10 @@
         <a href="dashboard.html" class="btn-3d btn-full">Volver al panel principal</a>
       </div>
     `;
-    saveProgress(20);
+    finishLesson({ ppm: p.lastPPM || 100, quizOk: true, seconds: 0 });
   }
 
+  });
 })();
 </script>
 </body>

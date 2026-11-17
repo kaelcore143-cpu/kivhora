@@ -43,24 +43,57 @@
         <button class="btn-3d btn--block" type="submit">Entrar</button>
       </form>
       <p class="hint" style="margin-top:16px">¿No tienes cuenta? <a href="registro.html">Crear una gratis</a></p>
-      <p class="hint">Cuenta de prueba: <strong>demo@kivhora.com</strong> / <strong>kivhora123</strong></p>
     </div>
   </main>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="kiv-cloud.js"></script>
 <script src="app.js"></script>
 <script>
-  document.getElementById('loginForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var email = document.getElementById('email').value.trim();
-    var pass = document.getElementById('password').value;
+  (function () {
+    var form = document.getElementById('loginForm');
     var msg = document.getElementById('msg');
-    if (!email || !pass) { msg.className = 'msg err'; msg.textContent = 'Completa todos los campos.'; return; }
-    var res = KIV.login(email, pass);
-    if (!res.ok) { msg.className = 'msg err'; msg.textContent = res.error; return; }
-    msg.className = 'msg ok'; msg.textContent = '¡Bienvenido! Redirigiendo…';
-    KIV.setUser(res.user, document.getElementById('remember').checked);
-    setTimeout(function () { window.location.href = 'dashboard.html'; }, 500);
-  });
+    var submit = form.querySelector('button[type="submit"]');
+
+    // Si ya hay una sesión activa, no tiene sentido mostrar el formulario.
+    KIV.boot().then(function (res) {
+      if (res.ok) window.location.replace('dashboard.html');
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = document.getElementById('email').value.trim();
+      var pass = document.getElementById('password').value;
+      var remember = document.getElementById('remember').checked;
+
+      if (!email || !pass) {
+        msg.className = 'msg err';
+        msg.textContent = 'Completa todos los campos.';
+        return;
+      }
+
+      submit.disabled = true;
+      msg.className = 'msg';
+      msg.textContent = 'Entrando…';
+
+      KIV.login(email, pass, remember).then(function (res) {
+        if (!res.ok) {
+          submit.disabled = false;
+          msg.className = 'msg err';
+          msg.textContent = res.error || 'No se pudo iniciar sesión.';
+          return;
+        }
+        msg.className = 'msg ok';
+        msg.textContent = '¡Bienvenido! Redirigiendo…';
+        window.location.href = 'dashboard.html';
+      }).catch(function () {
+        submit.disabled = false;
+        msg.className = 'msg err';
+        msg.textContent = 'No se pudo conectar con el servidor. Inténtalo de nuevo.';
+      });
+    });
+  })();
 </script>
 </body>
 </html>

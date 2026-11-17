@@ -16,10 +16,20 @@ The repository is under git; each page runs directly in the browser.
 ## Wiring
 
 - Each page is standalone HTML with an inline `<script>` IIFE at the bottom.
-- Script order matters: `app.js` (core `KIV`), then `lecciones.js` (`KIV_LESSONS`),
-  then the inline page script. Keep these globals unless every page is migrated.
-- `app.js`: auth, progress, XP, streaks, levels, toasts, header chrome.
-  `lecciones.js`: all 8 lesson definitions.
+- Script order matters on app pages:
+  1. Supabase JS from CDN (`@supabase/supabase-js@2`)
+  2. `supabase-config.js` (public URL + publishable/anon key)
+  3. `kiv-cloud.js` (`KIVCloud` wrapper: auth + RPC calls)
+  4. `app.js` (core `KIV`: cached state, helpers, chrome)
+  5. `lecciones.js` (`KIV_LESSONS`)
+  6. the inline page script
+- `app.js` no longer owns auth or progress. It calls `KIVCloud` and keeps an
+  in-memory copy of the server state. Protected pages start with
+  `KIV.ready(function (user, progress) { ... })`, which redirects to `login.html`
+  when there is no session.
+- Writes go through `KIV.completeLesson`, `KIV.completeExam`, `KIV.savePractice`
+  and `KIV.updateProfile`. They return promises (`{ok, xpGained, error}`); the
+  server is the only place that grants XP.
 - Pages: `index` (public landing/SEO), `login`, `registro`, `dashboard` (lesson map),
   `exam`, `lesson.html?lesson=1..8`, `practica`.
 - CSS: `style-2.5d.css` holds design tokens/components; `iconos-individuales.css` holds
@@ -27,40 +37,38 @@ The repository is under git; each page runs directly in the browser.
 
 ## Domain rules
 
-- `localStorage` keys keep the legacy `leomas_*` prefix: `leomas_users`,
-  `leomas_session`, `leomas_progress`, `leomas_profiles`. Don't rename without migrating.
-- Session is stored in `localStorage` when "remember me" is checked, otherwise in
-  `sessionStorage`.
-- Passwords use a demo djb2-style hash, not real security. This is a prototype; don't
-  present it as production auth.
-- Progression is strict: the exam needs ≥100 PPM **and** ≥8/10 to set `examDone`;
-  lesson 1 needs `examDone`; lesson n>1 needs lesson n-1 done (`KIV.isLessonUnlocked`).
-  The dashboard and `lesson.html` now enforce the same lock rules.
+- Auth is Supabase Auth (email/password). There is no local password hash and no
+  demo user seeded in the browser anymore.
+- Supabase stores its token via the adapter in `app.js` (`window.KIV_AUTH_STORAGE`):
+  `localStorage` when "mantener sesión" is checked, `sessionStorage` otherwise.
+  Do not write prototype data to `leomas_*` keys; `app.js` deletes any leftovers.
+- Progression is strict and enforced server-side: the exam needs ≥100 PPM **and** ≥8/10;
+  lesson 1 needs `examDone`; lesson n>1 needs lesson n-1 done. The dashboard and
+  `lesson.html` use the same rules for rendering only.
 - There are 8 lessons, not 9: `KIV.overall` divides by 9 because it counts the exam
   plus the 8 lessons.
 - Lesson XP is awarded only on first completion; replays update history but do not
   grant XP again. Lesson 8's milestone still saves automatically on first render.
+- Lessons 4, 6 and 7 require a correct quiz before the server accepts completion.
 - The dashboard inline script aborts silently if any expected element is missing.
   Keep `#dailyXP`, `#dailyPct`, `#dailyRing`, and `#badges` in the markup before
   changing its stats, lock, badges, or profile logic.
-- `app.js` seeds the demo user `demo@kivhora.com` / `kivhora123` with preset progress on
-  `DOMContentLoaded`.
 - Use `KIV.esc` for dynamic content; several spots interpolate strings into `innerHTML`.
 
-## Backend Supabase (scaffolded, not wired yet)
+## Backend Supabase (wired)
 
 - `supabase/migrations/20261117000000_kivhora_initial.sql` defines profiles, progress,
   lesson/exam/practice history, RLS, triggers and server-side RPCs.
 - `kiv-cloud.js` is the browser client wrapper; `supabase-config.js` holds the public
-  project URL and anon key. Never put a `service_role` key there.
-- Pages still use `app.js` + `localStorage`. Do not describe auth as production-ready
-  until login/registro/dashboard/exam/lesson/practice are migrated to Supabase.
+  project URL and publishable key. Never put a `service_role` key there.
+- All pages except `index.html` require the schema to be applied in the Supabase
+  project. Until then `get_my_state` returns 404 and protected pages cannot load.
 - Server-side rules: exam pass is ≥100 PPM and ≥8/10; lesson XP is first-completion
   only; exam XP only on first pass; practice XP is capped at 2 rewarded sessions/day;
   streaks/daily reset use `America/Bogota`.
 - Keep business logic in the SQL RPCs, not in the client, so users cannot grant
   themselves XP. The client only reads tables allowed by RLS.
-- Setup and RPC contracts: `supabase/README.md`.
+- Setup, RPC contracts and pending checks: `supabase/README.md`.
 
 ## Content and SEO
 
@@ -72,7 +80,8 @@ The repository is under git; each page runs directly in the browser.
 
 ## Manual verification
 
-There are no automated tests. Serve the site and walk: register/login → pass the exam
-(≥100 PPM, 8/10) → dashboard unlocks lesson 1 → complete lesson chain → practice saves XP
-→ edit profile/logout. Reset state via DevTools → Application → Local Storage
-(`leomas_*` keys).
+There are no automated tests in the repo. Serve the site and walk: register (email
+confirmation on/off) → login/logout → pass the exam (≥100 PPM, 8/10) → dashboard
+unlocks lesson 1 → complete the lesson chain → practice saves XP up to 2 times/day →
+edit profile. Use a second account to confirm RLS isolation. The Supabase SQL Editor
+can reset data with `delete from auth.users;` (cascades to app tables).
