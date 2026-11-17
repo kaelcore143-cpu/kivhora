@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /exam.html
+Disallow: /lesson.html
+Disallow: /login.html
+Disallow: /registro.html
+
+Sitemap: https://kivhora.com/sitemap.xml

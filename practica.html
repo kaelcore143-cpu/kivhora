@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Práctica de Velocidad | Kivhora</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/jpeg" href="nutria_logo.jpeg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="style-2.5d.css" rel="stylesheet">
+<link href="iconos-individuales.css" rel="stylesheet">
+<style>
+  /* Estilos específicos para la pantalla de cine */
+  .cinema-box {
+    background: #0A1B3D; /* Fondo oscuro para contraste */
+    border: 4px solid var(--blue-100);
+    border-radius: 24px;
+    height: 250px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 10px 30px rgba(0,0,0,0.5), 0 8px 0 var(--blue-200);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .cinema-text {
+    position: absolute;
+    white-space: nowrap;
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    left: 100%; /* Empieza fuera de la pantalla a la derecha */
+    will-change: transform;
+    text-shadow: 0 2px 10px rgba(255,255,255,0.2);
+  }
+
+  .speed-selector {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .speed-btn {
+    background: #fff; border: 2px solid var(--blue-100); border-radius: 14px;
+    padding: 14px; cursor: pointer; text-align: left; transition: 0.2s;
+    box-shadow: 0 4px 0 var(--blue-100); display: flex; flex-direction: column;
+  }
+  .speed-btn strong { font-size: 16px; color: var(--navy-900); display: block; margin-bottom: 2px;}
+  .speed-btn span { font-size: 12px; color: var(--text-muted); }
+  .speed-btn:hover { border-color: var(--blue-400); background: var(--blue-50); }
+  .speed-btn.active {
+    border-color: var(--blue-500); background: var(--blue-50); box-shadow: 0 4px 0 var(--blue-400);
+    transform: translateY(-2px);
+  }
+  .speed-btn.active strong { color: var(--blue-600); }
+</style>
+</head>
+<body>
+<header class="navbar">
+  <a href="dashboard.html" class="nav-logo"><img src="nutria_logo.jpeg" alt="Kivhora" width="40" height="40" style="object-fit: cover; border-radius: 8px;"><span>Kivhora</span></a>
+  <div class="nav-buttons">
+    <a href="dashboard.html" class="btn-2d">← Volver</a>
+    <div class="user-info">
+      <div class="user-avatar" data-user-avatar style="overflow: hidden; border-radius: 50%;">○</div>
+      <span class="user-name" data-user-name>Usuario</span>
+      <button class="btn-2d" data-logout>Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<main class="lesson-container">
+  <div class="card-3d lesson-card">
+
+    <!-- Intro -->
+    <section class="screen active" id="screenIntro">
+      <div class="intro-header">
+        <div class="intro-icon-wrap"><div class="icon-2d icon-2d-accent"><div class="intro-icon">🏎️</div></div></div>
+        <h1 class="intro-title">Desplazamiento Continuo</h1>
+        <p class="intro-subtitle">Entrena tu ojo para seguir el texto de derecha a izquierda. Obliga a tu cerebro a procesar bloques de palabras sin detenerse.</p>
+      </div>
+
+      <div class="speed-selector" id="speedSelector">
+        <button class="speed-btn active" data-speed="1">
+          <strong>🐢 Lento (150 PPM)</strong>
+          <span>Ideal para empezar</span>
+        </button>
+        <button class="speed-btn" data-speed="1.5">
+          <strong>🐇 Normal (225 PPM)</strong>
+          <span>Ritmo promedio</span>
+        </button>
+        <button class="speed-btn" data-speed="2">
+          <strong>⚡ Rápido (300 PPM)</strong>
+          <span>Exige concentración</span>
+        </button>
+        <button class="speed-btn" data-speed="3">
+          <strong>🚀 Élite (450 PPM)</strong>
+          <span>Nivel experto</span>
+        </button>
+      </div>
+
+      <div class="text-center"><span class="word-count-badge" id="wordCountBadge">--- palabras</span></div>
+      <div style="margin-top:28px"><button class="btn-3d btn-full" id="startBtn">¡Iniciar práctica!</button></div>
+    </section>
+
+    <!-- Ejercicio -->
+    <section class="screen" id="screenExercise">
+      <div class="exam-header">
+        <span class="exam-label">Sigue el texto con la mirada</span>
+        <div class="timer-display" id="timerDisplay">0%</div>
+      </div>
+      
+      <div class="cinema-box">
+        <div class="cinema-text" id="cinemaText"></div>
+      </div>
+
+      <div style="text-align: center; color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+        Concéntrate en el centro de la pantalla. No muevas los ojos de izquierda a derecha, deja que las palabras pasen frente a ti.
+      </div>
+
+      <button class="btn-3d btn-full" id="pauseBtn" style="display: none;">Pausar / Reanudar</button>
+    </section>
+
+    <!-- Resultado -->
+    <section class="screen" id="screenResult">
+      <div class="result-header">
+        <div class="result-icon-wrap"><div class="icon-2d icon-2d-gold"><div class="result-icon">🚀</div></div></div>
+        <h2 class="result-title">¡Práctica completada!</h2>
+        <p class="result-subtitle">Has entrenado tu velocidad de barrido visual.</p>
+      </div>
+      
+      <div class="ppm-display">
+        <div class="ppm-number" id="ppmNumber">0</div>
+        <div class="ppm-label">Velocidad de desplazamiento</div>
+      </div>
+
+      <div class="category-badge">
+        <span class="cat-icon">🧠</span>
+        <div class="cat-info">
+          <div class="cat-name">Entrenamiento Exitoso</div>
+          <div class="cat-desc">Has forzado a tu cerebro a procesar la información a un ritmo constante. La práctica diaria expandirá tu campo visual.</div>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-chip"><div class="chip-value" id="statWords">-</div><div class="chip-label">Palabras</div></div>
+        <div class="stat-chip"><div class="chip-value" id="statTime">-</div><div class="chip-label">Tiempo</div></div>
+        <div class="stat-chip"><div class="chip-value" id="statPPM">-</div><div class="chip-label">PPM</div></div>
+      </div>
+      
+      <div class="result-actions">
+        <button class="btn-3d" id="retryBtn" style="flex:1">Practicar de nuevo</button>
+        <a href="dashboard.html" class="btn-2d" style="flex:1">Volver al panel</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script>
+(function () {
+  var user = KIV.requireAuth();
+  if (!user) return;
+
+  var TEXT = 'La lectura veloz no consiste en mover los ojos a toda prisa, sino en entrenar al cerebro para reconocer bloques de información de un solo vistazo. Si dejas que las palabras fluyan frente a ti a un ritmo constante, tu mente se ve obligada a abandonar la subvocalización y empieza a procesar el texto de forma puramente visual. Esta técnica, conocida como desplazamiento continuo, es utilizada por los lectores más rápidos del mundo para duplicar su velocidad sin sacrificar la comprensión.';
+  
+  var words = TEXT.trim().split(/\s+/).length;
+  var TOTAL_SECONDS = (words / 150) * 60; // 150 palabras por minuto base
+  
+  var multiplier = 1;
+  var animationFrame;
+  var isPlaying = false;
+  var startTime = 0;
+  var pauseTime = 0;
+  var currentX = 0;
+  var totalDistance = 0;
+  var lastTimestamp = 0;
+  var pixelsPerSecond = 0;
+
+  var screens = {
+    intro: document.getElementById('screenIntro'),
+    exercise: document.getElementById('screenExercise'),
+    result: document.getElementById('screenResult')
+  };
+  
+  function show(name) {
+    Object.keys(screens).forEach(function (k) { screens[k].classList.toggle('active', k === name); });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  document.getElementById('wordCountBadge').textContent = words + ' palabras';
+  
+  // Selección de velocidad
+  document.querySelectorAll('.speed-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.speed-btn').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      multiplier = parseFloat(this.getAttribute('data-speed'));
+    });
+  });
+
+  var cinemaText = document.getElementById('cinemaText');
+  var timerDisplay = document.getElementById('timerDisplay');
+  var pauseBtn = document.getElementById('pauseBtn');
+
+  function resetAnimation() {
+    cancelAnimationFrame(animationFrame);
+    isPlaying = false;
+    currentX = 0;
+    cinemaText.textContent = TEXT;
+    cinemaText.style.transform = 'translateX(0px)';
+    timerDisplay.textContent = '0%';
+    pauseBtn.textContent = 'Pausar / Reanudar';
+    pauseBtn.style.display = 'none';
+  }
+
+  function startAnimation() {
+    show('exercise');
+    
+    // Esperar un momento para que el DOM calcule bien los anchos
+    setTimeout(function() {
+      var containerWidth = document.querySelector('.cinema-box').offsetWidth;
+      var textWidth = cinemaText.offsetWidth;
+      
+      // Distancia total: del borde derecho al izquierdo + ancho del texto
+      totalDistance = containerWidth + textWidth;
+      
+      // Calcular velocidad en píxeles por segundo
+      var basePPS = totalDistance / TOTAL_SECONDS;
+      pixelsPerSecond = basePPS * multiplier;
+
+      startTime = performance.now();
+      lastTimestamp = startTime;
+      isPlaying = true;
+      pauseBtn.style.display = 'inline-flex';
+      
+      animate(startTime);
+    }, 100);
+  }
+
+  function animate(timestamp) {
+    if (!isPlaying) return;
+
+    var deltaTime = (timestamp - lastTimestamp) / 1000; // en segundos
+    lastTimestamp = timestamp;
+
+    currentX -= pixelsPerSecond * deltaTime;
+    cinemaText.style.transform = 'translateX(' + currentX + 'px)';
+
+    var progress = Math.min(100, Math.max(0, (Math.abs(currentX) / totalDistance) * 100));
+    timerDisplay.textContent = Math.floor(progress) + '%';
+
+    if (Math.abs(currentX) >= totalDistance) {
+      finishAnimation();
+    } else {
+      animationFrame = requestAnimationFrame(animate);
+    }
+  }
+
+  pauseBtn.addEventListener('click', function() {
+    if (isPlaying) {
+      isPlaying = false;
+      cancelAnimationFrame(animationFrame);
+      pauseBtn.textContent = 'Reanudar';
+    } else {
+      isPlaying = true;
+      lastTimestamp = performance.now();
+      animationFrame = requestAnimationFrame(animate);
+      pauseBtn.textContent = 'Pausar';
+    }
+  });
+
+  function finishAnimation() {
+    isPlaying = false;
+    cancelAnimationFrame(animationFrame);
+    
+    var elapsedSec = ((words / 150) * 60) / multiplier;
+    var ppm = Math.round((words / elapsedSec) * 60);
+
+    document.getElementById('ppmNumber').textContent = ppm;
+    document.getElementById('statWords').textContent = words;
+    document.getElementById('statTime').textContent = Math.round(elapsedSec) + 's';
+    document.getElementById('statPPM').textContent = ppm;
+
+    // Dar XP (base 30 + bonus por velocidad)
+    var xpEarned = 30 + (multiplier > 1 ? 10 : 0) + (multiplier > 2 ? 20 : 0);
+    
+    // Guardar progreso
+    var p = KIV.getProgress(user.email);
+    KIV.touchStreak(p);
+    KIV.addXP(p, xpEarned);
+    // Añadir al historial
+    p.history.push({ type: 'practice', ppm: ppm, date: KIV.todayISO() });
+    KIV.saveProgress(user.email, p);
+
+    KIV.toast('¡Práctica guardada! +' + xpEarned + ' XP');
+    show('result');
+  }
+
+  function reset() {
+    resetAnimation();
+    show('intro');
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startAnimation);
+  document.getElementById('retryBtn').addEventListener('click', reset);
+})();
+</script>
+</body>
+</html>

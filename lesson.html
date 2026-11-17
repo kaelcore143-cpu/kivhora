@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lección | Kivhora</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/jpeg" href="nutria_logo.jpeg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="style-2.5d.css" rel="stylesheet">
+<link href="iconos-individuales.css" rel="stylesheet">
+<style>
+  .memory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+  .memory-card { font-size: 48px; text-align: center; padding: 20px; background: var(--blue-50); border-radius: 16px; border: 2px solid var(--blue-100); }
+  .cinema-box { background: #0A1B3D; border-radius: 16px; height: 200px; position: relative; overflow: hidden; box-shadow: inset 0 10px 30px rgba(0,0,0,0.5); display: flex; align-items: center; margin-bottom: 20px;}
+  .cinema-text { position: absolute; white-space: nowrap; font-size: 28px; font-weight: 800; color: #fff; left: 100%; }
+</style>
+</head>
+<body>
+<header class="navbar">
+  <a href="dashboard.html" class="nav-logo"><img src="nutria_logo.jpeg" alt="Kivhora" width="40" height="40" style="object-fit: cover; border-radius: 8px;"><span>Kivhora</span></a>
+  <div class="nav-buttons">
+    <a href="dashboard.html" class="btn-2d">← Volver al panel</a>
+    <div class="user-info">
+      <div class="user-avatar" data-user-avatar style="overflow: hidden; border-radius: 50%;">○</div>
+      <span class="user-name" data-user-name>Usuario</span>
+      <button class="btn-2d" data-logout>Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<main class="lesson-container">
+  <div class="card-3d lesson-card" id="mainCard">
+    <!-- El contenido se inyecta por JS -->
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script src="lecciones.js"></script>
+<script>
+(function () {
+  var user = KIV.requireAuth();
+  if (!user) return;
+
+  var params = new URLSearchParams(window.location.search);
+  var n = parseInt(params.get('lesson'), 10) || 1;
+  var lesson = KIV_LESSONS[n];
+  
+  if (!lesson) { window.location.href = 'dashboard.html'; return; }
+
+  var p = KIV.getProgress(user.email);
+  if (!KIV.isLessonUnlocked(n, p)) {
+    document.getElementById('mainCard').innerHTML = '<h2 class="text-center">Lección bloqueada</h2><p class="text-center muted">Completa la lección anterior en el panel principal.</p>';
+    return;
+  }
+
+  var card = document.getElementById('mainCard');
+  var xpEarned = 0;
+
+  // Función central: Siempre vuelve al panel
+  function returnToDashboard() {
+    window.location.href = 'dashboard.html';
+  }
+
+  function saveProgress(xp) {
+    var prog = KIV.getProgress(user.email);
+    KIV.touchStreak(prog);
+    KIV.addXP(prog, xp);
+    if (prog.lessonsDone.indexOf(n) === -1) prog.lessonsDone.push(n);
+    prog.history.push({ type: lesson.type, lesson: n, date: KIV.todayISO() });
+    KIV.saveProgress(user.email, prog);
+    KIV.toast('¡+' + xp + ' XP Ganados!');
+  }
+
+  // --- TIPOS DE LECCIÓN ---
+  if (lesson.type === 'validation') {
+    var ppm = p.lastPPM || 100;
+    var cat = KIV.category(ppm);
+    card.innerHTML = `
+      <div class="intro-header text-center">
+        <div class="intro-icon-wrap"><div class="icon-2d icon-2d-gold"><div class="intro-icon">${lesson.icon}</div></div></div>
+        <h1 class="intro-title">Validación de Nivel</h1>
+        <p class="intro-subtitle">Este es tu punto de partida actual. Si no superas los 110 PPM, te recomendamos practicar.</p>
+      </div>
+      <div class="ppm-display">
+        <div class="ppm-number">${ppm}</div>
+        <div class="ppm-label">Palabras por minuto</div>
+      </div>
+      <div class="category-badge">
+        <span class="cat-icon">${cat.icon}</span>
+        <div class="cat-info"><div class="cat-name">${cat.name}</div><div class="cat-desc">${cat.desc}</div></div>
+      </div>
+      <button class="btn-3d btn-full" id="nextBtn">Volver al panel</button>
+    `;
+    document.getElementById('nextBtn').onclick = function() {
+      saveProgress(10);
+      returnToDashboard();
+    };
+  }
+
+  else if (lesson.type === 'memory') {
+    card.innerHTML = `
+      <h2 class="text-center">${lesson.title}</h2>
+      <p class="text-center muted" id="memInstruction">Memoriza estos emojis. Desaparecerán pronto.</p>
+      <div class="memory-grid" id="memGrid"></div>
+      <div id="memQuiz" style="display:none; margin-top:20px;">
+        <h3 id="memQ"></h3>
+        <div id="memOpts"></div>
+      </div>
+    `;
+    var grid = document.getElementById('memGrid');
+    lesson.memory.forEach(function(e) { grid.innerHTML += '<div class="memory-card">' + e + '</div>'; });
+    
+    setTimeout(function() {
+      grid.style.display = 'none';
+      document.getElementById('memInstruction').style.display = 'none';
+      document.getElementById('memQuiz').style.display = 'block';
+      document.getElementById('memQ').textContent = lesson.memoryQ.q;
+      
+      var opts = document.getElementById('memOpts');
+      lesson.memoryQ.options.forEach(function(opt, idx) {
+        var b = document.createElement('button');
+        b.className = 'quiz-option';
+        b.textContent = opt;
+        b.onclick = function() {
+          opts.querySelectorAll('button').forEach(function(x){x.disabled=true;});
+          if (idx === lesson.memoryQ.answer) {
+            b.classList.add('correct');
+            xpEarned = 20;
+          } else {
+            b.classList.add('wrong');
+            opts.querySelectorAll('button')[lesson.memoryQ.answer].classList.add('correct');
+            xpEarned = 10;
+          }
+          saveProgress(xpEarned);
+          setTimeout(returnToDashboard, 1500);
+        };
+        opts.appendChild(b);
+      });
+    }, 3000);
+  }
+
+  else if (lesson.type === 'reading') {
+    card.innerHTML = `
+      <div class="exam-header">
+        <span class="exam-label">Lectura Rápida (${lesson.ppmTarget} PPM Mínimo)</span>
+      </div>
+      <div class="cinema-box">
+        <div class="cinema-text" id="cinemaText">${lesson.text}</div>
+      </div>
+      <p class="text-center muted">Concéntrate en el centro. No muevas los ojos de izquierda a derecha.</p>
+    `;
+    var cinemaText = document.getElementById('cinemaText');
+    var containerWidth = document.querySelector('.cinema-box').offsetWidth;
+    
+    setTimeout(function() {
+      var textWidth = cinemaText.offsetWidth;
+      var totalDistance = containerWidth + textWidth;
+      var words = lesson.text.trim().split(/\s+/).length;
+      
+      // Forzamos la velocidad exacta a 110 PPM para la prueba
+      var totalSeconds = (words / 110) * 60;
+      var pixelsPerSecond = totalDistance / totalSeconds;
+      
+      var startTime = performance.now();
+      var currentX = 0;
+      
+      function animate(timestamp) {
+        var deltaTime = (timestamp - startTime) / 1000;
+        currentX = -(pixelsPerSecond * deltaTime);
+        cinemaText.style.transform = 'translateX(' + currentX + 'px)';
+        if (Math.abs(currentX) < totalDistance) {
+          requestAnimationFrame(animate);
+        } else {
+          // Al terminar de leer, pasamos a la Comprensión Literal (n+1)
+          window.location.href = 'lesson.html?lesson=' + (n + 1);
+        }
+      }
+      requestAnimationFrame(animate);
+    }, 100);
+  }
+
+  else if (lesson.type === 'quiz') {
+    card.innerHTML = `
+      <div class="exam-header"><span class="exam-label">${lesson.title}</span></div>
+      <h2>${lesson.quiz.q}</h2>
+      <div id="quizOpts" style="margin-top:20px"></div>
+      <div class="msg" id="quizMsg" style="margin-top:15px;"></div>
+      
+      <div id="actionButtons" style="display:none; margin-top:20px;">
+        <button class="btn-3d btn-full" id="btnRetry" style="display:none; margin-bottom:10px; background:linear-gradient(135deg,#FFB020,#F59E0B); box-shadow:0 5px 0 #B45309;">Ir a Práctica para mejorar</button>
+        <button class="btn-2d btn-full" id="btnBack">Volver al panel</button>
+      </div>
+    `;
+    var opts = document.getElementById('quizOpts');
+    var answered = false;
+    
+    lesson.quiz.options.forEach(function(opt, idx) {
+      var b = document.createElement('button');
+      b.className = 'quiz-option';
+      b.textContent = opt;
+      b.onclick = function() {
+        if(answered) return;
+        answered = true;
+        opts.querySelectorAll('button').forEach(function(x){x.disabled=true;});
+        var msg = document.getElementById('quizMsg');
+        
+        if (idx === lesson.quiz.answer) {
+          b.classList.add('correct');
+          msg.className = 'msg ok';
+          msg.textContent = '¡Correcto! ' + lesson.quiz.explain;
+          saveProgress(30);
+          document.getElementById('actionButtons').style.display = 'block';
+          document.getElementById('btnBack').onclick = returnToDashboard;
+        } else {
+          b.classList.add('wrong');
+          opts.querySelectorAll('button')[lesson.quiz.answer].classList.add('correct');
+          msg.className = 'msg err';
+          msg.textContent = 'Incorrecto. ' + lesson.quiz.explain;
+          // Si falla, le mostramos el botón de ir a Práctica
+          document.getElementById('actionButtons').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'inline-flex';
+          document.getElementById('btnRetry').onclick = function() { window.location.href = 'practica.html'; };
+          document.getElementById('btnBack').onclick = returnToDashboard;
+        }
+      };
+      opts.appendChild(b);
+    });
+  }
+
+  else if (lesson.type === 'reward') {
+    card.innerHTML = `
+      <div class="result-header" style="margin-bottom: 20px;">
+        <div class="result-icon-wrap">
+          <div class="icon-2d icon-2d-gold" style="animation: floaty 2s infinite;">
+            <div class="result-icon">${lesson.icon}</div>
+          </div>
+        </div>
+        <h2 class="result-title" style="color:var(--gold);">¡Insignia Desbloqueada!</h2>
+        <p class="result-subtitle">Has superado la validación de lectura.</p>
+      </div>
+      <div class="ppm-display" style="background: linear-gradient(135deg,#FFD966,#F0A800); box-shadow: 0 8px 0 #B37C00;">
+        <div class="ppm-number">+50</div>
+        <div class="ppm-label">XP Ganados</div>
+      </div>
+      <button class="btn-3d btn-full" id="nextBtn">Reclamar y volver al panel</button>
+    `;
+    document.getElementById('nextBtn').onclick = function() {
+      saveProgress(50);
+      returnToDashboard();
+    };
+  }
+
+  else if (lesson.type === 'milestone') {
+    card.innerHTML = `
+      <div class="result-header">
+        <div class="result-icon-wrap"><div class="icon-2d icon-2d-primary"><div class="result-icon">🏆</div></div></div>
+        <h2 class="result-title">¡Sección Completada!</h2>
+        <p class="result-subtitle">Has terminado todos los pasos de esta etapa con éxito.</p>
+      </div>
+      <div class="result-actions" style="margin-top: 30px;">
+        <a href="dashboard.html" class="btn-3d btn-full">Volver al panel principal</a>
+      </div>
+    `;
+    saveProgress(20);
+  }
+
+})();
+</script>
+</body>
+</html>

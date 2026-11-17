@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi panel | Kivhora</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/jpeg" href="nutria_logo.jpeg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="style-2.5d.css" rel="stylesheet">
+<link href="iconos-individuales.css" rel="stylesheet">
+<style>
+  /* --- NUEVO DISEÑO DEL MAPA (ZIG-ZAG) --- */
+  .map-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    padding: 20px 0;
+    scrollbar-width: thin;
+  }
+  .map-container {
+    position: relative;
+    width: 1000px; /* Ancho fijo para mantener las proporciones exactas */
+    height: 450px;
+    margin: 0 auto;
+  }
+  .map-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+  }
+  .map-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+  
+  /* Formas de los nodos */
+  .shape-circle {
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid #000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    transition: 0.2s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  }
+  .shape-star {
+    width: 80px; height: 80px;
+    background: #fff;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    display: flex; align-items: center; justify-content: center;
+    border: none;
+    position: relative;
+    transition: 0.2s;
+  }
+  /* Para simular el borde de la estrella, usamos un pseudo-elemento de fondo */
+  .shape-star::before {
+    content: ''; position: absolute; inset: -4px;
+    background: #000;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    z-index: -1;
+  }
+  .shape-star::after {
+    content: ''; position: absolute; inset: 0;
+    background: #fff;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+  }
+  .shape-star span { position: relative; z-index: 3; font-size: 32px; }
+
+  .shape-triangle {
+    width: 0; height: 0;
+    border-left: 40px solid transparent;
+    border-right: 40px solid transparent;
+    border-bottom: 70px solid #fff;
+    position: relative;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .shape-triangle::after {
+    content: ''; position: absolute;
+    left: -44px; top: 4px;
+    width: 0; height: 0;
+    border-left: 44px solid transparent;
+    border-right: 44px solid transparent;
+    border-bottom: 76px solid #1CB0F6;
+    z-index: -1;
+  }
+  .shape-triangle span { position: absolute; bottom: 15px; z-index: 2; font-size: 24px; }
+
+  /* Etiquetas de texto */
+  .node-label {
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
+    margin-top: 8px;
+    color: #0A1B3D;
+    background: rgba(242,247,255,0.9);
+    padding: 2px 6px;
+    border-radius: 6px;
+    line-height: 1.2;
+  }
+
+  /* Estados de los nodos */
+  .map-node.locked .shape-circle,
+  .map-node.locked .shape-star,
+  .map-node.locked .shape-triangle { filter: grayscale(1); opacity: 0.5; }
+  .map-node.locked { pointer-events: none; }
+  .map-node:hover .shape-circle,
+  .map-node:hover .shape-star { transform: scale(1.1); border-color: #1CB0F6; }
+</style>
+</head>
+<body>
+<header class="navbar">
+  <a href="dashboard.html" class="nav-logo">
+    <img src="nutria_logo.jpeg" alt="Kivhora" width="40" height="40" style="object-fit: cover; border-radius: 8px;"><span>Kivhora</span>
+  </a>
+  <div class="nav-buttons">
+    <div class="user-info">
+      <button class="btn-2d" id="openProfileBtn" style="padding: 8px 12px;">⚙️ Perfil</button>
+      <div class="user-avatar" data-user-avatar style="overflow: hidden; border-radius: 50%;">○</div>
+      <span class="user-name" data-user-name>Usuario</span>
+      <button class="btn-2d" data-logout>Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<div class="modal" id="profileModal">
+  <div class="modal-content">
+    <h2>Mi Perfil</h2>
+    <div class="field">
+      <label for="profileName">Tu Nombre</label>
+      <input class="input" type="text" id="profileName" placeholder="¿Cómo te llamas?">
+    </div>
+    <div class="field">
+      <label>Elige tu Avatar</label>
+      <div class="avatar-grid" id="avatarGrid">
+        <button type="button" class="avatar-opt" data-avatar="🦦">🦦</button>
+        <button type="button" class="avatar-opt" data-avatar="🦊">🦊</button>
+        <button type="button" class="avatar-opt" data-avatar="🐼">🐼</button>
+        <button type="button" class="avatar-opt" data-avatar="🐨">🐨</button>
+        <button type="button" class="avatar-opt" data-avatar="🐯">🐯</button>
+        <button type="button" class="avatar-opt" data-avatar="🐸">🐸</button>
+        <button type="button" class="avatar-opt" data-avatar="🐙">🐙</button>
+        <button type="button" class="avatar-opt" data-avatar="⭐">⭐</button>
+      </div>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button class="btn-2d" id="closeProfileBtn" style="flex:1">Cancelar</button>
+      <button class="btn-3d" id="saveProfileBtn" style="flex:1">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<main class="container dash">
+  <div class="bg-letters" id="bgLetters"></div>
+
+  <div class="dash-head">
+    <div>
+      <h1 id="greeting">¡Hola de nuevo!</h1>
+      <p id="subGreeting">Tu siguiente reto está a un clic.</p>
+    </div>
+    <a href="exam.html" class="btn-3d">Repetir test de velocidad</a>
+  </div>
+
+  <section class="stats-grid" aria-label="Resumen de progreso">
+    <div class="stat-card"><div class="v" id="statStreak">0</div><div class="k">Racha</div><div class="sub">días seguidos</div></div>
+    <div class="stat-card"><div class="v" id="statXP">0</div><div class="k">XP total</div><div class="sub" id="statLevel">Nivel 1</div></div>
+    <div class="stat-card"><div class="v" id="statPPM">0</div><div class="k">Último PPM</div><div class="sub" id="statBest">Récord: 0</div></div>
+    <div class="stat-card"><div class="v" id="statLessons">0/8</div><div class="k">Lecciones</div><div class="sub" id="statOverall">0% completado</div></div>
+  </section>
+
+  <div class="dash-grid" style="grid-template-columns: 1fr;">
+    <section>
+      <div class="card" style="margin-bottom:18px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
+          <strong style="font-size:15px">Progreso del curso</strong>
+          <span class="hint" id="progressText">0%</span>
+        </div>
+        <div class="progress"><div class="progress__fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+
+      <h2 style="font-size:18px;margin:22px 0 12px">Tu ruta de aprendizaje</h2>
+      
+      <!-- NUEVO MAPA ZIG-ZAG -->
+      <div class="map-wrapper">
+        <div class="map-container">
+          
+          <!-- Líneas SVG -->
+          <svg class="map-svg" viewBox="0 0 1000 450" preserveAspectRatio="none">
+            <!-- Caminos Amarillos (Progreso normal) -->
+            <path d="M 80,350 L 200,200 L 280,350 L 450,350 L 550,220 L 650,350 L 720,160 L 820,320 L 900,150" 
+                  fill="none" stroke="#FFD966" stroke-width="6" stroke-linejoin="round" />
+            
+            <!-- Caminos Rojos (Ruta a Práctica) -->
+            <path d="M 450,350 L 400,100" fill="none" stroke="#FF4B4B" stroke-width="6" stroke-linejoin="round" />
+            <path d="M 400,100 L 550,220" fill="none" stroke="#FF4B4B" stroke-width="6" stroke-linejoin="round" />
+          </svg>
+
+          <!-- Nodos del Mapa -->
+          <!-- 1. Examen -->
+          <a class="map-node" id="node-exam" style="left: 8%; top: 77%;">
+            <div class="shape-circle">🚀</div>
+            <div class="node-label">examen</div>
+          </a>
+
+          <!-- 2. Validación (L1) -->
+          <a class="map-node" id="node-1" href="lesson.html?lesson=1" style="left: 20%; top: 44%;">
+            <div class="shape-circle">✅</div>
+            <div class="node-label">validación</div>
+          </a>
+
+          <!-- 3. Juego de Memoria (L2) -->
+          <a class="map-node" id="node-2" href="lesson.html?lesson=2" style="left: 28%; top: 77%;">
+            <div class="shape-circle">🧠</div>
+            <div class="node-label">juego de<br>memoria</div>
+          </a>
+
+          <!-- 4. Mín. 110 PPM (L3) -->
+          <a class="map-node" id="node-3" href="lesson.html?lesson=3" style="left: 45%; top: 77%;">
+            <div class="shape-circle">🏎️</div>
+            <div class="node-label">mín. 110 PPM</div>
+          </a>
+
+          <!-- 5. Práctica (Nodo especial) -->
+          <a class="map-node" id="node-practice" href="practica.html" style="left: 40%; top: 22%;">
+            <div class="shape-circle" style="border-color:#FF4B4B;">🏎️</div>
+            <div class="node-label" style="color:#FF4B4B;">practica</div>
+          </a>
+
+          <!-- 6. Comprensión Literal (L4) -->
+          <a class="map-node" id="node-4" href="lesson.html?lesson=4" style="left: 55%; top: 49%;">
+            <div class="shape-circle">🔍</div>
+            <div class="node-label">comprensión literal<br>(validación)</div>
+          </a>
+
+          <!-- 7. Insignia (L5) - ESTRELLA -->
+          <a class="map-node" id="node-5" href="lesson.html?lesson=5" style="left: 65%; top: 77%;">
+            <div class="shape-star"><span>🏅</span></div>
+            <div class="node-label">insignia</div>
+          </a>
+
+          <!-- 8. Comprensión Inferencial (L6) -->
+          <a class="map-node" id="node-6" href="lesson.html?lesson=6" style="left: 72%; top: 35%;">
+            <div class="shape-circle">💡</div>
+            <div class="node-label">comprensión<br>inferencial</div>
+          </a>
+
+          <!-- 9. Pensamiento Crítico (L7) -->
+          <a class="map-node" id="node-7" href="lesson.html?lesson=7" style="left: 82%; top: 71%;">
+            <div class="shape-circle">🤔</div>
+            <div class="node-label">pensamiento<br>crítico</div>
+          </a>
+
+          <!-- 10. Siguiente Sección (L8) - TRIÁNGULO -->
+          <a class="map-node" id="node-8" href="lesson.html?lesson=8" style="left: 90%; top: 33%;">
+            <div class="shape-triangle"><span>🚀</span></div>
+            <div class="node-label" style="margin-top: 2px;">siguiente sección</div>
+          </a>
+
+        </div>
+      </div>
+
+    </section>
+  </div>
+</main>
+
+<script src="app.js"></script>
+<script src="lecciones.js"></script>
+<script>
+(function () {
+  var user = KIV.requireAuth();
+  if (!user) return;
+
+  var p = KIV.getProgress(user.email);
+  KIV.touchStreak(p);
+  KIV.saveProgress(user.email, p);
+
+  /* Letras de fondo */
+  var bgLetters = document.getElementById('bgLetters');
+  var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  for (var i = 0; i < 15; i++) {
+    var span = document.createElement('span');
+    span.className = 'bg-letter';
+    span.textContent = letters[Math.floor(Math.random() * letters.length)];
+    span.style.left = Math.random() * 90 + '%';
+    span.style.top = Math.random() * 90 + '%';
+    span.style.fontSize = (Math.random() * 40 + 40) + 'px';
+    span.style.transform = 'rotate(' + (Math.random() * 60 - 30) + 'deg)';
+    span.style.animationDelay = (Math.random() * 3) + 's';
+    bgLetters.appendChild(span);
+  }
+
+  /* Cabecera y estadísticas */
+  var profileTag = user.profileType ? ' <span style="font-size:14px; color:var(--blue-500); text-transform:capitalize;">('+user.profileType+')</span>' : '';
+  document.getElementById('greeting').innerHTML = '¡Hola, ' + user.name.split(' ')[0] + '!' + profileTag;
+  
+  var next = null;
+  for (var i = 1; i <= 8; i++) {
+    if (p.lessonsDone.indexOf(i) === -1) { next = i; break; }
+  }
+  document.getElementById('subGreeting').textContent = !p.examDone
+    ? 'Empieza con el test de velocidad para desbloquear tu ruta.'
+    : next ? 'Tu siguiente lección: ' + KIV_LESSONS[next].title + '.' : '¡Completaste todas las lecciones! Repite para subir tu PPM.';
+
+  document.getElementById('statStreak').textContent = p.streak;
+  document.getElementById('statXP').textContent = KIV.fmt(p.xp);
+  document.getElementById('statPPM').textContent = p.lastPPM || '—';
+  document.getElementById('statBest').textContent = 'Récord: ' + (p.bestPPM || 0) + ' PPM';
+  document.getElementById('statLessons').textContent = p.lessonsDone.length + '/8';
+  document.getElementById('statOverall').textContent = KIV.overall(p) + '% completado';
+
+  var lvl = KIV.levelInfo(p.xp);
+  document.getElementById('statLevel').textContent = 'Nivel ' + lvl.level + ' · ' + lvl.name;
+
+  var pct = KIV.overall(p);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressText').textContent = pct + '%';
+
+  var dXP = (p.daily && p.daily.date === KIV.todayISO()) ? p.daily.xp : 0;
+  var dPct = Math.min(100, Math.round((dXP / 50) * 100));
+  document.getElementById('dailyXP').textContent = dXP + ' / 50 XP';
+  document.getElementById('dailyPct').textContent = dPct + '%';
+  document.getElementById('dailyRing').style.setProperty('--p', dPct);
+
+  /* Lógica de bloqueo y desbloqueo del mapa */
+  document.getElementById('node-exam').classList.add(p.examDone ? 'done' : '');
+  
+  for (var n = 1; n <= 8; n++) {
+    var node = document.getElementById('node-' + n);
+    if (!node) continue;
+    
+    var unlocked = KIV.isLessonUnlocked(n, p);
+    var done = p.lessonsDone.indexOf(n) !== -1;
+    
+    if (!unlocked && n !== 8) { // La 8 se bloquea por lógica
+      node.classList.add('locked');
+      node.removeAttribute('href');
+      node.style.cursor = 'not-allowed';
+    }
+    if (done) {
+      node.classList.add('done');
+    }
+  }
+
+  // Bloqueo del nodo de Práctica (siempre disponible después del examen)
+  var practiceNode = document.getElementById('node-practice');
+  if (!p.examDone) {
+    practiceNode.classList.add('locked');
+    practiceNode.removeAttribute('href');
+  }
+
+  /* Logros */
+  var badges = [
+    { icon: '🎯', label: 'Primer test', ok: p.examDone },
+    { icon: '🔥', label: 'Racha 3', ok: p.streak >= 3 },
+    { icon: '⚡', label: '300 PPM', ok: (p.bestPPM || 0) >= 300 },
+    { icon: '📚', label: '3 lecciones', ok: p.lessonsDone.length >= 3 },
+    { icon: '🧠', label: '5 lecciones', ok: p.lessonsDone.length >= 5 },
+    { icon: '💎', label: 'Nivel 4', ok: KIV.levelInfo(p.xp).level >= 4 },
+    { icon: '👑', label: '8 lecciones', ok: p.lessonsDone.length === 8 },
+    { icon: '🏆', label: '500 XP', ok: p.xp >= 500 }
+  ];
+  document.getElementById('badges').innerHTML = badges.map(function (b) {
+    return '<div class="badge-item' + (b.ok ? ' unlocked' : '') + '"><span class="b">' + (b.ok ? b.icon : '🔒') + '</span>' + b.label + '</div>';
+  }).join('');
+
+  /* Modal de Perfil */
+  var modal = document.getElementById('profileModal');
+  var profileNameInput = document.getElementById('profileName');
+  var selectedAvatar = '🦦';
+
+  var profiles = JSON.parse(localStorage.getItem('leomas_profiles') || '{}');
+  if (profiles[user.email] && profiles[user.email].avatar) {
+    selectedAvatar = profiles[user.email].avatar.value;
+  }
+  
+  document.querySelectorAll('.avatar-opt').forEach(function(btn) {
+    if(btn.getAttribute('data-avatar') === selectedAvatar) {
+      btn.classList.add('selected');
+    }
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.avatar-opt').forEach(function(b) { b.classList.remove('selected'); });
+      this.classList.add('selected');
+      selectedAvatar = this.getAttribute('data-avatar');
+    });
+  });
+
+  document.getElementById('openProfileBtn').addEventListener('click', function() {
+    profileNameInput.value = user.name;
+    modal.classList.add('active');
+  });
+
+  document.getElementById('closeProfileBtn').addEventListener('click', function() {
+    modal.classList.remove('active');
+  });
+
+  document.getElementById('saveProfileBtn').addEventListener('click', function() {
+    var newName = profileNameInput.value.trim();
+    if (newName.length < 2) { KIV.toast('El nombre es muy corto'); return; }
+    
+    KIV.updateProfile(newName, selectedAvatar);
+    KIV.toast('¡Perfil actualizado!');
+    modal.classList.remove('active');
+    setTimeout(function() { window.location.reload(); }, 800);
+  });
+
+})();
+</script>
+</body>
+</html>
