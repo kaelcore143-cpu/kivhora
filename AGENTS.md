@@ -3,8 +3,8 @@
 ## What this is
 
 Static, no-build, Spanish-language reading-speed app ("Kivhora"). Vanilla ES5-style
-JavaScript, global `KIV` namespace, no `package.json`, dependencies, tests, CI, or git.
-Everything runs directly in the browser.
+JavaScript, global `KIV` namespace, no `package.json`, dependencies, tests, or CI.
+The repository is under git; each page runs directly in the browser.
 
 ## Run
 
@@ -35,20 +35,40 @@ Everything runs directly in the browser.
   present it as production auth.
 - Progression is strict: the exam needs ≥100 PPM **and** ≥8/10 to set `examDone`;
   lesson 1 needs `examDone`; lesson n>1 needs lesson n-1 done (`KIV.isLessonUnlocked`).
-  The dashboard does not visually lock node 8, but `lesson.html` still rejects it.
+  The dashboard and `lesson.html` now enforce the same lock rules.
 - There are 8 lessons, not 9: `KIV.overall` divides by 9 because it counts the exam
   plus the 8 lessons.
+- Lesson XP is awarded only on first completion; replays update history but do not
+  grant XP again. Lesson 8's milestone still saves automatically on first render.
+- The dashboard inline script aborts silently if any expected element is missing.
+  Keep `#dailyXP`, `#dailyPct`, `#dailyRing`, and `#badges` in the markup before
+  changing its stats, lock, badges, or profile logic.
 - `app.js` seeds the demo user `demo@kivhora.com` / `kivhora123` with preset progress on
   `DOMContentLoaded`.
 - Use `KIV.esc` for dynamic content; several spots interpolate strings into `innerHTML`.
+
+## Backend Supabase (scaffolded, not wired yet)
+
+- `supabase/migrations/20261117000000_kivhora_initial.sql` defines profiles, progress,
+  lesson/exam/practice history, RLS, triggers and server-side RPCs.
+- `kiv-cloud.js` is the browser client wrapper; `supabase-config.js` holds the public
+  project URL and anon key. Never put a `service_role` key there.
+- Pages still use `app.js` + `localStorage`. Do not describe auth as production-ready
+  until login/registro/dashboard/exam/lesson/practice are migrated to Supabase.
+- Server-side rules: exam pass is ≥100 PPM and ≥8/10; lesson XP is first-completion
+  only; exam XP only on first pass; practice XP is capped at 2 rewarded sessions/day;
+  streaks/daily reset use `America/Bogota`.
+- Keep business logic in the SQL RPCs, not in the client, so users cannot grant
+  themselves XP. The client only reads tables allowed by RLS.
+- Setup and RPC contracts: `supabase/README.md`.
 
 ## Content and SEO
 
 - All UI copy is Spanish (UTF-8); preserve accents/emoji when editing.
 - The domain is hardcoded as `https://kivhora.com` in `index.html` (canonical, OG,
   JSON-LD), `sitemap.xml`, and `robots.txt`. Update them together if the domain changes.
-- The logo/mascot is `nutria_logo.jpeg` at the repo root. The README's `assets/...`
-  path is stale.
+- The logo/mascot is `nutria_logo.jpeg` at the repo root; keep all page references
+  pointing there.
 
 ## Manual verification
 

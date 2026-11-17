@@ -64,12 +64,15 @@
 
   function saveProgress(xp) {
     var prog = KIV.getProgress(user.email);
+    var isNew = prog.lessonsDone.indexOf(n) === -1;
     KIV.touchStreak(prog);
-    KIV.addXP(prog, xp);
-    if (prog.lessonsDone.indexOf(n) === -1) prog.lessonsDone.push(n);
+    if (isNew) {
+      KIV.addXP(prog, xp);
+      prog.lessonsDone.push(n);
+    }
     prog.history.push({ type: lesson.type, lesson: n, date: KIV.todayISO() });
     KIV.saveProgress(user.email, prog);
-    KIV.toast('¡+' + xp + ' XP Ganados!');
+    KIV.toast(isNew ? '¡+' + xp + ' XP Ganados!' : 'Lección repasada');
   }
 
   // --- TIPOS DE LECCIÓN ---
@@ -172,7 +175,8 @@
         if (Math.abs(currentX) < totalDistance) {
           requestAnimationFrame(animate);
         } else {
-          // Al terminar de leer, pasamos a la Comprensión Literal (n+1)
+          // La lectura se marca como completada antes de pasar a la comprensión literal.
+          saveProgress(20);
           window.location.href = 'lesson.html?lesson=' + (n + 1);
         }
       }

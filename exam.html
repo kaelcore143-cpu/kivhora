@@ -300,6 +300,11 @@
   });
 
   function finishExam() {
+    // Evita Infinity/NaN si se pulsa "Terminé" antes del primer tick del temporizador.
+    if (!isFinite(elapsed) || elapsed <= 0) {
+      elapsed = Math.max(1, (Date.now() - startTime) / 1000);
+    }
+    elapsed = Math.max(elapsed, 1);
     var ppm = Math.max(1, Math.round((wordCount / elapsed) * 60));
     
     // VALIDACIÓN ESTRICTA: Menos de 8 aciertos O menos de 100 PPM = NO SUPERADO

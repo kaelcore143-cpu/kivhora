@@ -206,7 +206,7 @@
 
           <!-- Nodos del Mapa -->
           <!-- 1. Examen -->
-          <a class="map-node" id="node-exam" style="left: 8%; top: 77%;">
+          <a class="map-node" id="node-exam" href="exam.html" style="left: 8%; top: 77%;">
             <div class="shape-circle">🚀</div>
             <div class="node-label">examen</div>
           </a>
@@ -268,6 +268,20 @@
         </div>
       </div>
 
+      <div class="card" style="margin-top:22px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px">
+          <strong style="font-size:15px">Meta diaria</strong>
+          <span class="hint" id="dailyPct">0%</span>
+        </div>
+        <div class="daily-ring">
+          <div class="ring" id="dailyRing" style="--p:0"><span id="dailyXP">0 / 50 XP</span></div>
+          <p class="muted" style="margin:0">Gana 50 XP hoy para mantener tu racha.</p>
+        </div>
+      </div>
+
+      <h2 style="font-size:18px;margin:22px 0 12px">Tus logros</h2>
+      <div class="badge-grid" id="badges"></div>
+
     </section>
   </div>
 </main>
@@ -299,8 +313,9 @@
   }
 
   /* Cabecera y estadísticas */
-  var profileTag = user.profileType ? ' <span style="font-size:14px; color:var(--blue-500); text-transform:capitalize;">('+user.profileType+')</span>' : '';
-  document.getElementById('greeting').innerHTML = '¡Hola, ' + user.name.split(' ')[0] + '!' + profileTag;
+  var firstName = KIV.esc((user.name || '').trim().split(/\s+/)[0] || 'lector');
+  var profileTag = user.profileType ? ' <span style="font-size:14px; color:var(--blue-500); text-transform:capitalize;">(' + KIV.esc(user.profileType) + ')</span>' : '';
+  document.getElementById('greeting').innerHTML = '¡Hola, ' + firstName + '!' + profileTag;
   
   var next = null;
   for (var i = 1; i <= 8; i++) {
@@ -331,7 +346,7 @@
   document.getElementById('dailyRing').style.setProperty('--p', dPct);
 
   /* Lógica de bloqueo y desbloqueo del mapa */
-  document.getElementById('node-exam').classList.add(p.examDone ? 'done' : '');
+  if (p.examDone) document.getElementById('node-exam').classList.add('done');
   
   for (var n = 1; n <= 8; n++) {
     var node = document.getElementById('node-' + n);
@@ -340,7 +355,7 @@
     var unlocked = KIV.isLessonUnlocked(n, p);
     var done = p.lessonsDone.indexOf(n) !== -1;
     
-    if (!unlocked && n !== 8) { // La 8 se bloquea por lógica
+    if (!unlocked) {
       node.classList.add('locked');
       node.removeAttribute('href');
       node.style.cursor = 'not-allowed';

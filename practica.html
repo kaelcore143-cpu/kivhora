@@ -163,6 +163,12 @@
   var user = KIV.requireAuth();
   if (!user) return;
 
+  var initialProgress = KIV.getProgress(user.email);
+  if (!initialProgress.examDone) {
+    window.location.href = 'exam.html';
+    return;
+  }
+
   var TEXT = 'La lectura veloz no consiste en mover los ojos a toda prisa, sino en entrenar al cerebro para reconocer bloques de información de un solo vistazo. Si dejas que las palabras fluyan frente a ti a un ritmo constante, tu mente se ve obligada a abandonar la subvocalización y empieza a procesar el texto de forma puramente visual. Esta técnica, conocida como desplazamiento continuo, es utilizada por los lectores más rápidos del mundo para duplicar su velocidad sin sacrificar la comprensión.';
   
   var words = TEXT.trim().split(/\s+/).length;

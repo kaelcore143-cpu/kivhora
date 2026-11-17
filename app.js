@@ -36,16 +36,20 @@ var KIV = (function () {
   function fmt(n) { return new Intl.NumberFormat('es-CO').format(n); }
 
   function getUser() {
-    var u = getLS(SESSION, null);
-    if (u) return u;
     try {
       var raw = sessionStorage.getItem(SESSION);
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) { return null; }
+      if (raw) return JSON.parse(raw);
+    } catch (e) { /* sesión de pestaña inválida */ }
+    return getLS(SESSION, null);
   }
   function setUser(user, remember) {
-    if (remember) setLS(SESSION, user);
-    else sessionStorage.setItem(SESSION, JSON.stringify(user));
+    if (remember) {
+      setLS(SESSION, user);
+      sessionStorage.removeItem(SESSION);
+    } else {
+      sessionStorage.setItem(SESSION, JSON.stringify(user));
+      localStorage.removeItem(SESSION);
+    }
   }
   function requireAuth() {
     var u = getUser();
