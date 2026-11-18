@@ -11,9 +11,11 @@ Archivos públicos (obligatorios):
 ```
 index.html          login.html        registro.html
 dashboard.html      exam.html         lesson.html
-practica.html       404.html          privacidad.html   terminos.html
+practica.html       test.html         404.html
+privacidad.html     terminos.html
 style-2.5d.css      iconos-individuales.css
-app.js              lecciones.js      kiv-cloud.js      supabase-config.js
+app.js              lecciones.js      examen-datos.js
+kiv-cloud.js        supabase-config.js
 nutria_logo.jpeg
 iconos/             fondos/
 robots.txt          sitemap.xml

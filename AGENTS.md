@@ -30,8 +30,11 @@ The repository is under git; each page runs directly in the browser.
 - Writes go through `KIV.completeLesson`, `KIV.completeExam`, `KIV.savePractice`
   and `KIV.updateProfile`. They return promises (`{ok, xpGained, error}`); the
   server is the only place that grants XP.
-- Pages: `index` (public landing/SEO), `login`, `registro`, `dashboard` (lesson map),
-  `exam`, `lesson.html?lesson=1..8`, `practica`, `404`, `privacidad`, `terminos`.
+- Pages: `index` (public landing/SEO), `test` (public speed test, no account),
+  `login`, `registro`, `dashboard` (lesson map), `exam`, `lesson.html?lesson=1..8`,
+  `practica`, `404`, `privacidad`, `terminos`.
+- `examen-datos.js` holds the three reading passages + questions used by both
+  `exam.html` and `test.html`. Edit it once, both pages change.
 - CSS: `style-2.5d.css` holds design tokens/components; `iconos-individuales.css` holds
   icons. Page-specific CSS is usually inline in that page's `<head>`.
 

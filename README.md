@@ -8,7 +8,9 @@ Supabase con un interruptor.
 - `index.html` — Landing pública optimizada para SEO (JSON-LD, OG, canonical, semántica).
 - `login.html` / `registro.html` — Autenticación (local o Supabase).
 - `dashboard.html` — Ruta de 8 lecciones, XP, racha y logros.
-- `exam.html` — Test de velocidad lectora de 60 s.
+- `exam.html` — Test de velocidad lectora de 60 s (usuarios con cuenta).
+- `test.html` — Test público sin registro; enlaza al curso con una cuenta.
+- `examen-datos.js` — Lecturas y preguntas compartidas por `exam.html` y `test.html`.
 - `lesson.html?lesson=1..8` — Lecciones con quiz de comprensión.
 - `practica.html` — Práctica de desplazamiento continuo.
 - `privacidad.html` / `terminos.html` — Páginas legales enlazadas desde el footer y el registro.

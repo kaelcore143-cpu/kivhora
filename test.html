@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test de velocidad lectora gratis | Kivhora</title>
+<meta name="description" content="Mide tus palabras por minuto y tu comprensión lectora en 3 minutos. Test gratuito, sin registro y con resultado inmediato.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://kivhora.com/test.html">
+<meta name="theme-color" content="#1CB0F6">
+<link rel="icon" type="image/jpeg" href="nutria_logo.jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="style-2.5d.css" rel="stylesheet">
+<style>
+  .test-main { padding: 26px 0 70px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .test-head { text-align: center; max-width: 660px; margin: 0 auto 22px; }
+  .test-head h1 { font-size: clamp(26px, 4.4vw, 40px); margin-bottom: 12px; }
+  .test-head p { color: var(--text-secondary); font-size: 16.5px; }
+  .test-meta {
+    display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    margin: 18px 0 6px; font-size: 12.5px; font-weight: 700; color: var(--text-muted);
+  }
+  .test-meta span {
+    background: #fff; border: 2px solid var(--blue-100);
+    border-radius: 999px; padding: 6px 12px;
+  }
+
+  .reading-top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .timer {
+    font-variant-numeric: tabular-nums;
+    font-size: 30px; font-weight: 800; line-height: 1;
+    color: var(--blue-600);
+  }
+  .timer.urgent { color: #FF4B4B; }
+  .reading-box {
+    background: #FBFDFF;
+    border: 2px dashed var(--blue-100);
+    border-radius: 16px;
+    padding: 20px 22px;
+    max-height: 340px;
+    overflow-y: auto;
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--text-primary);
+  }
+  .reading-actions { margin-top: 18px; }
+
+  .q-label { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+  #quizOptions { margin-top: 16px; }
+  #quizOptions .quiz-option + .quiz-option { margin-top: 8px; }
+
+  .result-ppm {
+    text-align: center;
+    background: linear-gradient(135deg, #1CB0F6, #0E7FC0);
+    color: #fff;
+    border-radius: 20px;
+    padding: 24px 18px 20px;
+    box-shadow: 0 6px 0 #0A5C8C;
+  }
+  .result-ppm .n { font-size: clamp(48px, 12vw, 72px); font-weight: 800; line-height: 1; letter-spacing: -.03em; }
+  .result-ppm .l { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .85; margin-top: 6px; }
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0 0; }
+  .result-grid > div { background: #fff; border: 2px solid var(--blue-100); border-radius: 14px; padding: 12px; text-align: center; }
+  .result-grid .v { font-weight: 800; font-size: 19px; }
+  .result-grid .k { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+  .result-cat { margin-top: 18px; text-align: center; }
+  .result-cat .icon { font-size: 34px; line-height: 1; }
+  .result-cat h2 { margin: 8px 0 4px; font-size: 20px; }
+  .result-cat p { color: var(--text-secondary); margin: 0; }
+  .result-note {
+    margin-top: 18px; padding: 14px 16px; border-radius: 14px;
+    background: #F2F7FF; border: 2px solid var(--blue-100);
+    font-size: 14px; color: var(--text-secondary);
+  }
+  .result-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  .result-actions > * { flex: 1 1 200px; text-align: center; }
+  .center { text-align: center; }
+
+  @media (max-width: 520px) {
+    .card-3d { padding: 22px 18px; border-radius: 20px; }
+    .result-grid { grid-template-columns: 1fr 1fr; }
+    .result-grid > div:last-child { grid-column: 1 / -1; }
+    .reading-top { flex-wrap: nowrap; align-items: flex-start; }
+    .reading-top > div:first-child { flex: 1; min-width: 0; }
+    .reading-top strong { font-size: 13.5px; line-height: 1.4; }
+    .timer { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<header class="navbar">
+  <a href="index.html" class="nav-logo" aria-label="Kivhora, inicio">
+    <img src="nutria_logo.jpeg" alt="Mascota nutria de Kivhora" width="40" height="40" style="object-fit: cover; border-radius: 8px;">
+    <span>Kivhora</span>
+  </a>
+  <div class="nav-buttons">
+    <a href="login.html" class="btn-2d">Entrar</a>
+    <a href="registro.html" class="btn-3d">Empezar gratis</a>
+  </div>
+</header>
+
+<main class="test-main">
+  <div class="container narrow">
+
+    <!-- INTRO -->
+    <section class="screen active" id="screenIntro">
+      <div class="test-head">
+        <span class="pill">🎯 Test gratis · sin cuenta</span>
+        <h1>¿Cuántas palabras por minuto lees?</h1>
+        <p>Lee el texto, responde 10 preguntas y descubre tu velocidad y tu comprensión. Tarda unos 3 minutos y no necesitas registrarte.</p>
+        <div class="test-meta">
+          <span>⏱️ 60 segundos de lectura</span>
+          <span>🧠 10 preguntas</span>
+          <span>⚡ Resultado inmediato</span>
+        </div>
+      </div>
+      <div class="card-3d center">
+        <img src="nutria_logo.jpeg" alt="Kivhora, la nutria lectora" width="96" height="96" style="border-radius: 22px; object-fit: cover; margin: 0 auto 18px; box-shadow: 0 10px 24px rgba(16,42,85,.16);">
+        <h2 style="font-size:20px">Cuando quieras</h2>
+        <p class="muted" style="margin-bottom:22px">Busca un lugar tranquilo. El cronómetro empieza cuando pulses el botón.</p>
+        <button class="btn-3d btn--lg" id="startBtn">Empezar el test</button>
+        <p class="hint" style="margin:14px 0 0">No guardamos nada hasta que crees tu cuenta.</p>
+      </div>
+    </section>
+
+    <!-- LECTURA -->
+    <section class="screen" id="screenReading">
+      <div class="card-3d">
+        <div class="reading-top">
+          <div>
+            <div class="q-label">Lectura</div>
+            <strong style="font-size:15px">Lee lo más rápido que puedas, sin perder el sentido</strong>
+          </div>
+          <div class="timer" id="timerDisplay" aria-live="off">60</div>
+        </div>
+        <div class="reading-box" id="readingText"></div>
+        <div class="reading-actions">
+          <button class="btn-3d btn--lg" id="doneBtn" style="width:100%">Terminé de leer</button>
+          <p class="msg err" id="readingMsg" role="alert" aria-live="polite" style="margin:10px 0 0"></p>
+          <p class="hint center" style="margin:6px 0 0">Si el tiempo se acaba, pasamos solos a las preguntas.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUIZ -->
+    <section class="screen" id="screenQuiz">
+      <div class="card-3d">
+        <div class="q-label" id="quizProgress">Pregunta 1 de 10</div>
+        <h2 id="quizQuestion" style="font-size:20px;margin:10px 0 0"></h2>
+        <div id="quizOptions"></div>
+        <div class="msg" id="quizMsg" role="alert" aria-live="polite"></div>
+        <button class="btn-3d" id="btnNextQuestion" style="display:none">Siguiente pregunta →</button>
+      </div>
+    </section>
+
+    <!-- RESULTADO -->
+    <section class="screen" id="screenResult">
+      <div class="card-3d">
+        <div class="result-ppm">
+          <div class="n" id="ppmNumber">0</div>
+          <div class="l">Palabras por minuto</div>
+        </div>
+        <div class="result-grid">
+          <div><div class="v" id="statScore">0/10</div><div class="k">Comprensión</div></div>
+          <div><div class="v" id="statTime">0 s</div><div class="k">Tiempo</div></div>
+          <div><div class="v" id="statWords">0</div><div class="k">Palabras</div></div>
+        </div>
+
+        <div class="result-cat">
+          <div class="icon" id="catIcon">📚</div>
+          <h2 id="catName">Lector promedio</h2>
+          <p id="catDesc"></p>
+        </div>
+
+        <div class="result-note" id="resultNote"></div>
+
+        <div class="result-actions">
+          <a href="registro.html" class="btn-3d">Crear mi cuenta gratis</a>
+          <button class="btn-2d" id="retryBtn">Repetir el test</button>
+        </div>
+        <p class="hint center" style="margin:14px 0 0">
+          ¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a>
+        </p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="examen-datos.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var TOTAL_SECONDS = 60;
+  var DATA = window.KIV_EXAM_DATA || [];
+
+  var currentExam = null;
+  var timer = null, startTime = 0, elapsed = 0;
+  var wordCount = 0;
+  var currentQIndex = 0;
+  var score = 0;
+  var answered = false;
+
+  var screens = {
+    intro: document.getElementById('screenIntro'),
+    reading: document.getElementById('screenReading'),
+    quiz: document.getElementById('screenQuiz'),
+    result: document.getElementById('screenResult')
+  };
+
+  function show(name) {
+    Object.keys(screens).forEach(function (k) {
+      screens[k].classList.toggle('active', k === name);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function category(ppm) {
+    if (ppm < 100) return { icon: '🐢', name: 'Lector muy lento', desc: 'Estás por debajo del promedio. Con práctica diaria se mejora rápido.' };
+    if (ppm < 200) return { icon: '🐌', name: 'Lector lento', desc: 'Estás desarrollando tu ritmo. Unos minutos al día marcan la diferencia.' };
+    if (ppm < 300) return { icon: '📚', name: 'Lector promedio', desc: 'Lees al ritmo de la mayoría. Con entrenamiento puedes superarlo.' };
+    if (ppm < 400) return { icon: '🌟', name: 'Buen lector', desc: 'Estás por encima del promedio. Tu velocidad es sólida.' };
+    if (ppm < 600) return { icon: '⚡', name: 'Lector rápido', desc: 'Excelente: lees mucho más rápido que la mayoría.' };
+    return { icon: '🏆', name: 'Lector experto', desc: '¡Extraordinario! Tu velocidad es de nivel élite.' };
+  }
+
+  var timerDisplay = document.getElementById('timerDisplay');
+
+  function startTimer() {
+    startTime = Date.now();
+    elapsed = 0;
+    timerDisplay.textContent = TOTAL_SECONDS;
+    timerDisplay.classList.remove('urgent');
+
+    timer = setInterval(function () {
+      elapsed = (Date.now() - startTime) / 1000;
+      var remaining = Math.max(0, TOTAL_SECONDS - elapsed);
+      timerDisplay.textContent = Math.ceil(remaining);
+      timerDisplay.classList.toggle('urgent', remaining <= 10);
+      if (remaining <= 0) {
+        stopTimer();
+        elapsed = TOTAL_SECONDS;
+        startQuiz();
+      }
+    }, 100);
+  }
+
+  function stopTimer() {
+    if (timer) { clearInterval(timer); timer = null; }
+  }
+
+  document.getElementById('startBtn').addEventListener('click', function () {
+    if (!DATA.length) return;
+    currentExam = DATA[Math.floor(Math.random() * DATA.length)];
+    wordCount = currentExam.text.trim().split(/\s+/).length;
+    var box = document.getElementById('readingText');
+    box.textContent = currentExam.text;
+    box.scrollTop = 0;
+    show('reading');
+    startTimer();
+  });
+
+  var doneBtn = document.getElementById('doneBtn');
+  var readingMsg = document.getElementById('readingMsg');
+
+  function handleDone() {
+    stopTimer();
+    if (!isFinite(elapsed) || elapsed <= 0) {
+      elapsed = Math.max(1, (Date.now() - startTime) / 1000);
+    }
+    elapsed = Math.max(elapsed, 1);
+
+    // Un clic accidental no puede dar 5.000 PPM: pedimos un mínimo creíble.
+    var minSeconds = Math.max(4, (wordCount / 1200) * 60);
+    if (elapsed < minSeconds) {
+      readingMsg.textContent = 'Eso fue demasiado rápido. Lee el texto antes de continuar.';
+      doneBtn.textContent = 'Reanudar lectura';
+      doneBtn.onclick = resumeReading;
+      return;
+    }
+
+    startQuiz();
+  }
+
+  function resumeReading() {
+    readingMsg.textContent = '';
+    doneBtn.textContent = 'Terminé de leer';
+    doneBtn.onclick = handleDone;
+    startTimer();
+  }
+
+  doneBtn.onclick = handleDone;
+
+  function startQuiz() {
+    currentQIndex = 0;
+    score = 0;
+    show('quiz');
+    renderQuestion();
+  }
+
+  function renderQuestion() {
+    var q = currentExam.questions[currentQIndex];
+    answered = false;
+
+    document.getElementById('quizProgress').textContent = 'Pregunta ' + (currentQIndex + 1) + ' de 10';
+    document.getElementById('quizQuestion').textContent = q.q;
+    document.getElementById('quizMsg').textContent = '';
+
+    var optsWrap = document.getElementById('quizOptions');
+    optsWrap.innerHTML = '';
+
+    var nextBtn = document.getElementById('btnNextQuestion');
+    nextBtn.style.display = 'none';
+
+    q.options.forEach(function (opt, idx) {
+      var b = document.createElement('button');
+      b.className = 'quiz-option';
+      b.type = 'button';
+      b.textContent = opt;
+      b.addEventListener('click', function () {
+        if (answered) return;
+        answered = true;
+
+        var buttons = optsWrap.querySelectorAll('button');
+        for (var i = 0; i < buttons.length; i++) { buttons[i].disabled = true; }
+
+        var msg = document.getElementById('quizMsg');
+        if (idx === q.answer) {
+          b.classList.add('correct');
+          msg.className = 'msg ok';
+          msg.textContent = '¡Correcto!';
+          score++;
+        } else {
+          b.classList.add('wrong');
+          buttons[q.answer].classList.add('correct');
+          msg.className = 'msg err';
+          msg.textContent = 'Incorrecto. La respuesta era: ' + q.options[q.answer];
+        }
+
+        nextBtn.textContent = currentQIndex === 9 ? 'Ver mi resultado' : 'Siguiente pregunta →';
+        nextBtn.style.display = 'inline-flex';
+      });
+      optsWrap.appendChild(b);
+    });
+  }
+
+  document.getElementById('btnNextQuestion').addEventListener('click', function () {
+    if (currentQIndex < 9) {
+      currentQIndex++;
+      renderQuestion();
+    } else {
+      finishTest();
+    }
+  });
+
+  function finishTest() {
+    elapsed = Math.max(elapsed || 0, 1);
+    var ppm = Math.max(1, Math.round((wordCount / elapsed) * 60));
+    var cat = category(ppm);
+
+    document.getElementById('ppmNumber').textContent = ppm;
+    document.getElementById('statScore').textContent = score + '/10';
+    document.getElementById('statTime').textContent = elapsed.toFixed(1).replace('.', ',') + ' s';
+    document.getElementById('statWords').textContent = wordCount;
+    document.getElementById('catIcon').textContent = cat.icon;
+    document.getElementById('catName').textContent = cat.name;
+    document.getElementById('catDesc').textContent = cat.desc;
+
+    var note = document.getElementById('resultNote');
+    if (score >= 8 && ppm >= 100) {
+      note.innerHTML = '✅ <strong>Cumples el requisito del curso.</strong> Con tu cuenta empiezas directo en la lección 1 y guardamos tu récord, tu racha y tu progreso.';
+    } else {
+      note.innerHTML = '💡 Para empezar el curso necesitas <strong>100 PPM</strong> y <strong>8 aciertos</strong>. Repite el test cuando quieras; en Kivhora entrenas justo eso, paso a paso.';
+    }
+
+    show('result');
+  }
+
+  document.getElementById('retryBtn').addEventListener('click', function () {
+    stopTimer();
+    timerDisplay.textContent = TOTAL_SECONDS;
+    timerDisplay.classList.remove('urgent');
+    elapsed = 0;
+    score = 0;
+    doneBtn.textContent = 'Terminé de leer';
+    doneBtn.onclick = handleDone;
+    readingMsg.textContent = '';
+    show('intro');
+  });
+})();
+</script>
+</body>
+</html>
