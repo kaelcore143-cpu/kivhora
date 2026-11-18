@@ -185,10 +185,10 @@
         <div class="result-actions">
           <a href="registro.html" class="btn-3d">Crear mi cuenta gratis</a>
           <button class="btn-2d" id="retryBtn">Repetir el test</button>
+          <button class="btn-2d" id="shareBtn">Compartir mi resultado</button>
         </div>
-        <p class="hint center" style="margin:14px 0 0">
-          ¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a>
-        </p>
+        <p class="hint center" id="shareMsg" role="status" aria-live="polite" style="margin:10px 0 0"></p>
+        <p class="hint center" style="margin:6px 0 0">¿Ya tienes cuenta? <a href="login.html">Inicia sesión</a></p>
       </div>
     </section>
 
@@ -394,7 +394,39 @@
     doneBtn.textContent = 'Terminé de leer';
     doneBtn.onclick = handleDone;
     readingMsg.textContent = '';
+    document.getElementById('shareMsg').textContent = '';
     show('intro');
+  });
+
+  /* Compartir resultado (Web Share API; si no existe, copia el texto). */
+  document.getElementById('shareBtn').addEventListener('click', function () {
+    var ppm = document.getElementById('ppmNumber').textContent;
+    var score = document.getElementById('statScore').textContent;
+    var url;
+    try { url = new URL('test.html', window.location.href).href; } catch (e) { url = 'https://kivhora.com/test.html'; }
+    var text = 'Leí ' + ppm + ' palabras por minuto con ' + score + ' de comprensión en Kivhora. ¿Cuánto lees tú?';
+    var msg = document.getElementById('shareMsg');
+
+    function copyFallback() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text + ' ' + url).then(function () {
+          msg.textContent = '¡Copiado! Pégalo donde quieras.';
+        }, function () {
+          msg.textContent = 'No pudimos copiar el texto. Copia la dirección de esta página.';
+        });
+      } else {
+        msg.textContent = 'Copia la dirección de esta página para compartirla.';
+      }
+    }
+
+    if (navigator.share) {
+      navigator.share({ title: 'Mi test de velocidad lectora', text: text, url: url }).catch(function (err) {
+        if (err && err.name === 'AbortError') return; // el usuario cerró el menú
+        copyFallback();
+      });
+      return;
+    }
+    copyFallback();
   });
 })();
 </script>
