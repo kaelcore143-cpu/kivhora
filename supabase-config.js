@@ -1,17 +1,24 @@
 /* ============================================================
-   KIVHORA · Configuración pública de Supabase
+   KIVHORA · Configuración pública de la capa de datos
    ------------------------------------------------------------
-   Completa estos valores desde:
-   Supabase → Project Settings → API
+   MODO ACTUAL: local
+   - `enabled: false` usa el almacenamiento del navegador. No
+     requiere backend ni conexión; sirve para desarrollar y
+     probar la app.
+   - `enabled: true` usa Supabase Auth + RPC. Requiere el
+     esquema aplicado (ver supabase/README.md).
 
-   - url: Project URL, por ejemplo https://abcdefgh.supabase.co
-   - anonKey: la clave "anon public"
+   Datos del proyecto (Project Settings → API):
+   - url: Project URL
+   - anonKey: publishable key (o "anon public" en proyectos
+     antiguos)
 
-   La anon key es pública por diseño: la protección real está en
-   las políticas RLS y en las RPC definidas en supabase/migrations.
-   NUNCA pongas aquí la clave "service_role".
+   La clave es pública por diseño: la protección real está en
+   las políticas RLS y en las RPC. NUNCA pongas aquí la
+   `service_role` key.
    ============================================================ */
 window.KIV_SUPABASE = {
+  enabled: false,
   url: 'https://plazqnnhrhlhypxbtlkt.supabase.co',
   anonKey: 'sb_publishable_aJU719qnsUKEcMxHTjOhJA_FZphCaFw'
 };

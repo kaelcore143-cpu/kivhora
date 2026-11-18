@@ -55,14 +55,31 @@ The repository is under git; each page runs directly in the browser.
   changing its stats, lock, badges, or profile logic.
 - Use `KIV.esc` for dynamic content; several spots interpolate strings into `innerHTML`.
 
-## Backend Supabase (wired)
+## Data layer (cloud or local)
+
+- `kiv-cloud.js` exposes one API (`KIVCloud`) with two backends:
+  - **local** (default): browser storage. No backend needed. Rules are reimplemented in
+    the client and stored under `kiv_local_db` + `kiv_local_session`. Not security:
+    anyone with DevTools can edit it. Use it to develop/demo, not to sell as real auth.
+  - **cloud**: Supabase Auth + RPC. Enable with `enabled: true` in
+    `supabase-config.js`.
+- Switch modes only through `enabled`; pages and `app.js` do not change.
+- Local rules mirror the SQL: exam pass ≥100 PPM and ≥8/10; lesson 1 requires the exam;
+  lesson n requires n-1; lessons 4/6/7 require the quiz; lesson XP on first completion;
+  exam XP on first pass; practice XP capped at 2/day.
+- Both modes return `{ok, state}` where `state` is already camelCase
+  (`profile`, `progress`, `lessonsDone`, `history`).
+- If `enabled` is true but the CDN or the schema is unavailable, protected pages fail;
+  there is no silent fallback to local. Flip `enabled` deliberately.
+
+## Backend Supabase (ready, off by default)
 
 - `supabase/migrations/20261117000000_kivhora_initial.sql` defines profiles, progress,
   lesson/exam/practice history, RLS, triggers and server-side RPCs.
 - `kiv-cloud.js` is the browser client wrapper; `supabase-config.js` holds the public
   project URL and publishable key. Never put a `service_role` key there.
-- All pages except `index.html` require the schema to be applied in the Supabase
-  project. Until then `get_my_state` returns 404 and protected pages cannot load.
+- The schema is applied in the project, but `enabled: false` keeps the app in local
+  mode for now.
 - Server-side rules: exam pass is ≥100 PPM and ≥8/10; lesson XP is first-completion
   only; exam XP only on first pass; practice XP is capped at 2 rewarded sessions/day;
   streaks/daily reset use `America/Bogota`.
@@ -80,8 +97,9 @@ The repository is under git; each page runs directly in the browser.
 
 ## Manual verification
 
-There are no automated tests in the repo. Serve the site and walk: register (email
-confirmation on/off) → login/logout → pass the exam (≥100 PPM, 8/10) → dashboard
-unlocks lesson 1 → complete the lesson chain → practice saves XP up to 2 times/day →
-edit profile. Use a second account to confirm RLS isolation. The Supabase SQL Editor
-can reset data with `delete from auth.users;` (cascades to app tables).
+There are no automated tests in the repo. Serve the site and walk: register/login →
+pass the exam (≥100 PPM, 8/10) → dashboard unlocks lesson 1 → complete the lesson chain
+→ practice saves XP twice/day → edit profile/logout. In local mode, reset by deleting
+`kiv_local_db` and `kiv_local_session` from DevTools → Application → Storage. With
+Supabase on, use a second account to confirm RLS isolation and reset via the SQL Editor
+(`delete from auth.users;` cascades).

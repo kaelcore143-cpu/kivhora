@@ -1,9 +1,16 @@
 # Backend Supabase de Kivhora
 
-El frontend ya está conectado a Supabase: `login`, `registro`, `dashboard`, `exam`,
-`lesson` y `practica` leen y escriben mediante `kiv-cloud.js`. Para que funcione, el
-proyecto debe tener aplicado el esquema de `migrations/` y `../supabase-config.js`
-debe contener la URL y la publishable/anon key.
+Kivhora funciona sin backend en **modo local**. Supabase está conectado y con el
+esquema aplicado, pero **desactivado** con `enabled: false` en `../supabase-config.js`.
+
+Para activarlo:
+
+1. Cambia `enabled: false` a `enabled: true` en `../supabase-config.js`.
+2. Verifica la URL y la publishable/anon key del proyecto.
+3. Recarga la página y prueba registro/login.
+
+Importante: los datos del modo local y los de Supabase son independientes. Al activar
+Supabase, las cuentas creadas en el navegador no existen allí.
 
 ## 1. Crear el proyecto
 
@@ -138,20 +145,21 @@ Prueba rápida de RLS:
 
 ## 8. Estado de la integración
 
-Ya implementado en el frontend:
+Implementado en el frontend:
 
 1. Supabase JS + `supabase-config.js` + `kiv-cloud.js` se cargan en todas las páginas
    de la app.
 2. `login.html` / `registro.html` usan `KIVCloud.signIn` / `signUp`; registro maneja
    confirmación de correo.
-3. Las páginas protegidas esperan `KIV.ready(user, progress)`; ya no hay
-   `requireAuth` síncrono ni progreso local.
+3. Las páginas protegidas esperan `KIV.ready(user, progress)`.
 4. Las escrituras usan `complete_lesson`, `complete_exam`, `save_practice` y
-   `update_profile`. Se eliminó el seed local y el hash de contraseñas.
+   `update_profile`.
 5. El examen registra también los intentos reprobados (sin XP).
 6. "Mantener sesión" usa `localStorage`; sin marcarlo, `sessionStorage`.
+7. `kiv-cloud.js` incluye un modo local con las mismas reglas para trabajar sin
+   backend; se activa/desactiva con `enabled` en `supabase-config.js`.
 
-Pendiente de verificar contra el proyecto real (requiere el esquema aplicado):
+Pendiente de verificar con Supabase activo y un usuario confirmado:
 
 - Registro + login + logout, con y sin confirmación de correo.
 - Examen aprobado y reprobado, incluido el reintento sin XP duplicado.

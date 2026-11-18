@@ -1,11 +1,12 @@
 # Kivhora — Aprende a leer rápido
 
 Sitio estático, sin build, listo para subir a cualquier hosting (Netlify, Vercel,
-GitHub Pages, cPanel, S3…). La autenticación y el progreso viven en Supabase.
+GitHub Pages, cPanel, S3…). Funciona sin backend (modo local) y puede conectarse a
+Supabase con un interruptor.
 
 ## Archivos
 - `index.html` — Landing pública optimizada para SEO (JSON-LD, OG, canonical, semántica).
-- `login.html` / `registro.html` — Autenticación con Supabase Auth.
+- `login.html` / `registro.html` — Autenticación (local o Supabase).
 - `dashboard.html` — Ruta de 8 lecciones, XP, racha y logros.
 - `exam.html` — Test de velocidad lectora de 60 s.
 - `lesson.html?lesson=1..8` — Lecciones con quiz de comprensión.
@@ -14,24 +15,28 @@ GitHub Pages, cPanel, S3…). La autenticación y el progreso viven en Supabase.
 - `app.js` — Estado en memoria, utilidades, navegación y autenticación (delegada).
 - `lecciones.js` — Contenido de las 8 lecciones + preguntas.
 - `nutria_logo.jpeg` — Logo/mascota (nutria con corona) y favicon.
-- `kiv-cloud.js` — Cliente de Supabase: sesión, RPC y normalización del estado.
-- `supabase-config.js` — URL y publishable key públicas del proyecto Supabase.
+- `kiv-cloud.js` — Capa de datos: modo local y cliente Supabase (Auth + RPC).
+- `supabase-config.js` — Interruptor `enabled` + URL y publishable key de Supabase.
 - `supabase/` — Migración SQL, RLS, RPCs y guía de configuración del backend.
 
-## Backend Supabase
+## Modos de datos
 
-El esquema (`profiles`, `user_progress`, historial, RLS y RPC) está en
-`supabase/migrations/`. Antes de abrir las páginas hay que aplicarlo en el proyecto
-y configurar la URL y la publishable key en `supabase-config.js`; los pasos están en
-`supabase/README.md`.
+**Local (por defecto, `enabled: false`)**
+- No requiere backend ni configuración. Todo se guarda en el navegador
+  (`kiv_local_db` y `kiv_local_session`).
+- Aplica las mismas reglas de XP, bloqueos y tope de práctica que el servidor.
+- Es un modo de desarrollo/demo: cualquiera con DevTools puede editar esos datos.
+  No lo presentes como autenticación real.
 
-El servidor calcula XP, rachas, desbloqueos y el límite diario de práctica. El
-navegador no puede escribir esas tablas directamente. La publishable/anon key es
-pública por diseño; nunca pongas la `service_role` key en el frontend.
+**Supabase (`enabled: true`)**
+- Auth con correo/contraseña y progreso calculado en el servidor.
+- Requiere aplicar `supabase/migrations/` y configurar URL + publishable key.
+  Pasos en `supabase/README.md`.
+- La clave pública puede ir en el frontend; nunca pongas la `service_role`.
 
 ## Notas
-- No hay usuarios ni contraseñas guardadas en el navegador. Al cargar, `app.js`
-  elimina cualquier resto del prototipo antiguo (`leomas_*`).
 - "Mantener mi sesión" usa `localStorage`; sin marcarlo, la sesión vive solo en la
   pestaña (`sessionStorage`) y se cierra al cerrarla.
+- Las cuentas locales y las de Supabase son independientes: al cambiar de modo no se
+  migran datos.
 - SEO: revisa el dominio en `canonical`, `og:url`, `sitemap.xml` y `robots.txt`.
