@@ -3,6 +3,7 @@ Allow: /
 Disallow: /dashboard.html
 Disallow: /exam.html
 Disallow: /lesson.html
+Disallow: /practica.html
 Disallow: /login.html
 Disallow: /registro.html
 

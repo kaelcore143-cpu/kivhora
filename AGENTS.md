@@ -31,7 +31,7 @@ The repository is under git; each page runs directly in the browser.
   and `KIV.updateProfile`. They return promises (`{ok, xpGained, error}`); the
   server is the only place that grants XP.
 - Pages: `index` (public landing/SEO), `login`, `registro`, `dashboard` (lesson map),
-  `exam`, `lesson.html?lesson=1..8`, `practica`.
+  `exam`, `lesson.html?lesson=1..8`, `practica`, `404`, `privacidad`, `terminos`.
 - CSS: `style-2.5d.css` holds design tokens/components; `iconos-individuales.css` holds
   icons. Page-specific CSS is usually inline in that page's `<head>`.
 

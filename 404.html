@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Página no encontrada | Kivhora</title>
+<meta name="robots" content="noindex, follow">
+<meta name="theme-color" content="#1CB0F6">
+<link rel="icon" type="image/jpeg" href="nutria_logo.jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="style-2.5d.css" rel="stylesheet">
+<style>
+  .err-wrap {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .err-card { max-width: 560px; }
+  .err-code {
+    font-size: clamp(64px, 16vw, 120px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.04em;
+    color: var(--blue-400, #1CB0F6);
+  }
+  .err-card img {
+    width: 120px; height: 120px;
+    object-fit: cover;
+    border-radius: 28px;
+    margin: 0 auto 22px;
+    box-shadow: 0 10px 25px rgba(16,42,85,.18);
+  }
+  .err-card h1 { font-size: clamp(22px, 4vw, 30px); }
+  .err-card p { color: var(--text-secondary, #4A5B7C); }
+  .err-actions {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    margin-top: 26px;
+  }
+</style>
+</head>
+<body>
+<main class="err-wrap">
+  <div class="err-card">
+    <img src="nutria_logo.jpeg" alt="Kivhora, la nutria lectora">
+    <div class="err-code">404</div>
+    <h1>Esta página se perdió entre las letras</h1>
+    <p>No encontramos lo que buscabas. Puede que el enlace esté mal escrito o que la página ya no exista.</p>
+    <div class="err-actions">
+      <a href="index.html" class="btn-3d">Volver al inicio</a>
+      <a href="dashboard.html" class="btn-2d">Ir a mi panel</a>
+    </div>
+  </div>
+</main>
+</body>
+</html>
