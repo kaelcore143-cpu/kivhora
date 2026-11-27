@@ -253,7 +253,9 @@ var KIVCloud = (function () {
         bestPPM: 0,
         minutes: 0,
         lastActive: null,
-        daily: { date: null, xp: 0 }
+        daily: { date: null, xp: 0 },
+        failed_lessons: [],
+        last_visit: null
       },
       history: []
     };
@@ -322,6 +324,8 @@ var KIVCloud = (function () {
         minutes: state.progress.minutes,
         lastActive: state.progress.lastActive,
         daily: { date: state.progress.daily.date, xp: state.progress.daily.xp },
+        failed_lessons: Array.isArray(state.progress.failed_lessons) ? state.progress.failed_lessons : [],
+        last_visit: state.progress.last_visit || null,
         history: state.history.slice(0, 50)
       }
     };
@@ -370,6 +374,7 @@ var KIVCloud = (function () {
     } else {
       migrateState(state);
     }
+    state.progress.last_visit = state.progress.last_visit || todayISO();
     return { ok: true, state: snapshot(user, state) };
   }
 
@@ -463,6 +468,10 @@ var KIVCloud = (function () {
       p.hearts -= 1;
     }
 
+    if (!quizOk && !p.failed_lessons.includes(n)) {
+      p.failed_lessons.push(n);
+    }
+
     state.history.unshift({ type: 'lesson', lesson: n, xp: xp, date: todayISO() });
     applyActivity(state, xp, Number(ppm), Number(seconds));
     db.states[user.id] = state;
@@ -550,6 +559,24 @@ var KIVCloud = (function () {
     if (avatar.length < 1 || avatar.length > 16) return localFail('invalid_avatar');
 
     var state = db.states[user.id] || blankState(user);
+
+    var avatarsList = [
+      { id: '🦦', xp: 0, streak: 0 },
+      { id: '👑', xp: 200, streak: 1 },
+      { id: '🐳', xp: 500, streak: 2 },
+      { id: '🦋', xp: 800, streak: 3 },
+      { id: '🦊', xp: 1200, streak: 4 },
+      { id: '🐼', xp: 1600, streak: 5 },
+      { id: '🦁', xp: 2200, streak: 6 },
+      { id: '🐯', xp: 3000, streak: 7 }
+    ];
+    var av = avatarsList.filter(function (a) { return a.id === avatar; })[0];
+    if (av) {
+      if (((state.progress && state.progress.xp) || 0) < av.xp || ((state.progress && state.progress.streak) || 0) < av.streak) {
+        return localFail('invalid_avatar');
+      }
+    }
+
     state.profile.name = name;
     state.profile.avatar = avatar;
     user.name = name;

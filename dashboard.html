@@ -228,6 +228,10 @@
     <a href="exam.html" class="btn-3d">Repetir test de velocidad</a>
   </div>
 
+  <div class="card" id="inactiveBanner" style="display:none; margin-bottom:18px; border-left: 4px solid #FF9800; background: #FFF8E1;">
+    <strong>⏰ Llevas 2+ días sin practicar.</strong> Tu racha puede estar en riesgo. ¡Vuelve!
+  </div>
+
   <section class="stats-grid" aria-label="Resumen de progreso">
     <div class="stat-card">
       <img class="stat-ico" src="iconos/opt/racha.png" alt="" width="38" height="38" loading="lazy">
@@ -436,6 +440,16 @@
   if (p.examDone) document.getElementById('node-exam').classList.add('done');
   
   var todayStr = KIV.todayISO();
+  var inactiveBanner = document.getElementById('inactiveBanner');
+  var daysSince = 0;
+  if (p.last_visit) {
+    var d1 = new Date(p.last_visit + 'T00:00:00');
+    var d2 = new Date(todayStr + 'T00:00:00');
+    daysSince = Math.round((d2 - d1) / 86400000);
+  }
+  if (daysSince >= 2) {
+    inactiveBanner.style.display = 'block';
+  }
   for (var n = 1; n <= 8; n++) {
     var node = document.getElementById('node-' + n);
     if (!node) continue;
@@ -519,6 +533,7 @@
   document.getElementById('saveProfileBtn').addEventListener('click', function() {
     var newName = profileNameInput.value.trim();
     if (newName.length < 2) { KIV.toast('El nombre es muy corto'); return; }
+    if (!KIV.avatarUnlocked(selectedAvatar, p.xp, p.streak)) { KIV.toast('Ese avatar aún no está desbloqueado. Sigue practicando.'); return; }
 
     KIV.updateProfile(newName, selectedAvatar).then(function (res) {
       if (!res.ok) { KIV.toast(res.error || 'No se pudo actualizar el perfil'); return; }

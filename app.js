@@ -185,12 +185,44 @@ var KIV = (function () {
   /* ----------------------------------------------------------
      Escrituras: todas pasan por RPC del servidor.
      ---------------------------------------------------------- */
+  function celebrateLevel(level) {
+    try {
+      var styleEl = document.createElement('style');
+      styleEl.textContent = '@keyframes confetti-fall { from { transform: translateY(-30px) rotate(0deg); opacity: 1; } to { transform: translateY(140px) rotate(360deg); opacity: 0; } }';
+      document.head.appendChild(styleEl);
+      var emojis = ['🎉', '⭐', '🌟', '🏆', '💪'];
+      var wrap = document.createElement('div');
+      wrap.style.position = 'fixed';
+      wrap.style.top = '50%';
+      wrap.style.left = '50%';
+      wrap.style.pointerEvents = 'none';
+      wrap.style.zIndex = '9999';
+      document.body.appendChild(wrap);
+      for (var i = 0; i < 24; i++) {
+        var el = document.createElement('div');
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.position = 'absolute';
+        el.style.left = (Math.random() * 40 - 20) + '%';
+        el.style.fontSize = (Math.random() * 18 + 14) + 'px';
+        el.style.animation = 'confetti-fall 1.2s linear forwards';
+        wrap.appendChild(el);
+      }
+      setTimeout(function () { if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 1300);
+      KIV.toast('¡Subiste de nivel a ' + level + '!');
+    } catch (e) { /* celebración opcional */ }
+  }
+
   function mutate(promise) {
     var beforeXP = state ? state.progress.xp : 0;
+    var beforeLevel = state ? levelInfo(state.progress.xp).level : 0;
     return promise.then(function (res) {
       if (!res.ok) return res;
       applyState(res.state);
       res.xpGained = state.progress.xp - beforeXP;
+      var afterLevel = levelInfo(state.progress.xp).level;
+      if (afterLevel > beforeLevel) {
+        celebrateLevel(afterLevel);
+      }
       return res;
     });
   }
@@ -277,6 +309,21 @@ var KIV = (function () {
     var prev = p.lessonsDone ? p.lessonsDone.find(function (l) { return l && l.lesson === n - 1; }) : null;
     return prev && prev.crowns >= 1;
   }
+  function avatarUnlocked(avatar, xp, streak) {
+    var list = [
+      { id: '🦦', xp: 0, streak: 0 },
+      { id: '👑', xp: 200, streak: 1 },
+      { id: '🐳', xp: 500, streak: 2 },
+      { id: '🦋', xp: 800, streak: 3 },
+      { id: '🦊', xp: 1200, streak: 4 },
+      { id: '🐼', xp: 1600, streak: 5 },
+      { id: '🦁', xp: 2200, streak: 6 },
+      { id: '🐯', xp: 3000, streak: 7 }
+    ];
+    var found = list.filter(function (a) { return a.id === avatar; })[0];
+    if (!found) return true;
+    return (xp || 0) >= found.xp && (streak || 0) >= found.streak;
+  }
 
   /* ----------------------------------------------------------
      Interfaz
@@ -334,6 +381,7 @@ var KIV = (function () {
     levelInfo: levelInfo,
     category: category,
     isLessonUnlocked: isLessonUnlocked,
+    avatarUnlocked: avatarUnlocked,
     toast: toast,
     avatarHTML: avatarHTML,
     initChrome: initChrome,

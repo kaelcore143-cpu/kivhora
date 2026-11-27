@@ -101,6 +101,9 @@
 
       <div class="text-center"><span class="word-count-badge" id="wordCountBadge">--- palabras</span></div>
       <div style="margin-top:28px"><button class="btn-3d btn-full" id="startBtn">¡Iniciar práctica!</button></div>
+      <div id="failedPracticeWrap" style="display:none;margin-top:16px;">
+        <a href="#" class="btn-2d btn-full" id="retryFailedLink">Repasar lección fallida</a>
+      </div>
     </section>
 
     <!-- Ejercicio -->
@@ -167,6 +170,13 @@
   if (!initialProgress.examDone) {
     window.location.href = 'exam.html';
     return;
+  }
+
+  var failedWrap = document.getElementById('failedPracticeWrap');
+  var failedLink = document.getElementById('retryFailedLink');
+  if (initialProgress && initialProgress.failed_lessons && initialProgress.failed_lessons.length > 0) {
+    failedLink.href = 'lesson.html?lesson=' + initialProgress.failed_lessons[0];
+    failedWrap.style.display = 'block';
   }
 
   var TEXT = 'La lectura veloz no consiste en mover los ojos a toda prisa, sino en entrenar al cerebro para reconocer bloques de información de un solo vistazo. Si dejas que las palabras fluyan frente a ti a un ritmo constante, tu mente se ve obligada a abandonar la subvocalización y empieza a procesar el texto de forma puramente visual. Esta técnica, conocida como desplazamiento continuo, es utilizada por los lectores más rápidos del mundo para duplicar su velocidad sin sacrificar la comprensión.';
