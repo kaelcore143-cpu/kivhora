@@ -70,6 +70,12 @@
       var button = opts.button;
       if (button) button.disabled = true;
 
+      if (user.hearts <= 0) {
+        if (button) button.disabled = false;
+        KIV.toast('Sin corazones. Practica para recuperar.');
+        return;
+      }
+
       KIV.completeLesson(n, {
         ppm: opts.ppm || p.lastPPM || 0,
         quizOk: !!opts.quizOk,

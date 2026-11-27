@@ -89,6 +89,7 @@ var KIVCloud = (function () {
       invalid_multiplier: 'La velocidad de práctica no es válida.',
       invalid_name: 'El nombre debe tener entre 2 y 60 caracteres.',
       invalid_avatar: 'El avatar seleccionado no es válido.',
+      hearts_depleted: 'No tienes corazones. Practica para recuperar.',
       invalid_email: 'Escribe un correo válido.',
       weak_password_local: 'La contraseña debe tener al menos 6 caracteres.',
       storage_unavailable: 'Tu navegador no permite guardar datos. Revisa la configuración de privacidad.'
@@ -237,7 +238,11 @@ var KIVCloud = (function () {
         email: user.email,
         name: user.name,
         profileType: user.profileType,
-        avatar: '🦦'
+        avatar: '🦦',
+        hearts: 5,
+        max_hearts: 5,
+        gems: 0,
+        streak_freezes: 0
       },
       progress: {
         examDone: false,
@@ -252,6 +257,35 @@ var KIVCloud = (function () {
       },
       history: []
     };
+  }
+
+  function migrateProfile(state) {
+    var prof = state.profile || {};
+    if (prof.hearts == null) prof.hearts = 5;
+    if (prof.max_hearts == null) prof.max_hearts = 5;
+    if (prof.gems == null) prof.gems = 0;
+    if (prof.streak_freezes == null) prof.streak_freezes = 0;
+  }
+
+  function migrateLessons(state) {
+    if (!Array.isArray(state.progress.lessonsDone)) return;
+    state.progress.lessonsDone = state.progress.lessonsDone.map(function (item) {
+      if (typeof item === 'number') {
+        return { lesson: item, crowns: 1, last_completed: null };
+      }
+      if (item && typeof item === 'object') {
+        if (item.crowns == null) item.crowns = 1;
+        if (item.last_completed == null) item.last_completed = null;
+        return item;
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  function migrateState(state) {
+    if (!state) return;
+    migrateProfile(state);
+    migrateLessons(state);
   }
 
   function localFail(code) {
@@ -272,7 +306,11 @@ var KIVCloud = (function () {
         email: user.email,
         name: state.profile.name,
         profileType: state.profile.profileType,
-        avatar: state.profile.avatar
+        avatar: state.profile.avatar,
+        hearts: state.profile.hearts,
+        max_hearts: state.profile.max_hearts,
+        gems: state.profile.gems,
+        streak_freezes: state.profile.streak_freezes
       },
       progress: {
         examDone: !!state.progress.examDone,
@@ -305,7 +343,13 @@ var KIVCloud = (function () {
     if (!p.lastActive) p.streak = 1;
     else if (p.lastActive === today) p.streak = p.streak || 1;
     else if (dayDiff(p.lastActive, today) === 1) p.streak = (p.streak || 0) + 1;
-    else p.streak = 1;
+    else {
+      if (p.streak_freezes > 0) {
+        p.streak_freezes -= 1;
+      } else {
+        p.streak = 1;
+      }
+    }
     p.lastActive = today;
 
     if (ppm > 0) p.lastPPM = ppm;
@@ -323,6 +367,8 @@ var KIVCloud = (function () {
       state = blankState(user);
       db.states[user.id] = state;
       writeDb(db);
+    } else {
+      migrateState(state);
     }
     return { ok: true, state: snapshot(user, state) };
   }
@@ -390,17 +436,31 @@ var KIVCloud = (function () {
 
     if (n === 1) {
       if (!p.examDone) return localFail('lesson_locked');
-    } else if (p.lessonsDone.indexOf(n - 1) === -1) {
-      return localFail('lesson_locked');
+    } else {
+      var prev = p.lessonsDone.find(function (l) { return l.lesson === n - 1; });
+      if (!prev || prev.crowns < 1) return localFail('lesson_locked');
     }
 
     if ((n === 4 || n === 6 || n === 7) && !quizOk) return localFail('quiz_required');
 
+    if (p.hearts <= 0) return localFail('hearts_depleted');
+
     var xp = 0;
-    if (p.lessonsDone.indexOf(n) === -1) {
+    var lessonEntry = p.lessonsDone.find(function (l) { return l.lesson === n; });
+
+    if (!lessonEntry) {
       xp = n === 2 ? (quizOk ? 20 : 10) : LESSON_XP[n];
-      p.lessonsDone.push(n);
-      p.lessonsDone.sort(function (a, b) { return a - b; });
+      p.lessonsDone.push({ lesson: n, crowns: 1, last_completed: todayISO() });
+      p.lessonsDone.sort(function (a, b) { return a.lesson - b.lesson; });
+    } else {
+      lessonEntry.last_completed = todayISO();
+      if (quizOk && lessonEntry.crowns < 3) {
+        lessonEntry.crowns += 1;
+      }
+    }
+
+    if (!quizOk && p.hearts > 0) {
+      p.hearts -= 1;
     }
 
     state.history.unshift({ type: 'lesson', lesson: n, xp: xp, date: todayISO() });
@@ -433,6 +493,10 @@ var KIVCloud = (function () {
       p.examDone = true;
     }
 
+    if (!passed && p.hearts > 0) {
+      p.hearts -= 1;
+    }
+
     state.history.unshift({ type: 'exam', ppm: ppm, score: score, passed: passed, xp: xp, date: todayISO() });
     applyActivity(state, xp, ppm, seconds);
     db.states[user.id] = state;
@@ -462,6 +526,9 @@ var KIVCloud = (function () {
     var xp = 0;
     if (rewardedToday < PRACTICE_DAILY_CAP) {
       xp = 30 + (multiplier > 1 ? 10 : 0) + (multiplier > 2 ? 20 : 0);
+      if (p.hearts < p.max_hearts) {
+        p.hearts += 1;
+      }
     }
 
     state.history.unshift({ type: 'practice', ppm: ppm, multiplier: multiplier, xp: xp, date: today });

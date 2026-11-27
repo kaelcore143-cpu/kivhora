@@ -97,11 +97,14 @@ var KIV = (function () {
         email: profile.email || null,
         name: profile.name || 'Lector',
         profileType: profile.profileType || 'adolescente',
-        avatar: profile.avatar || '🦦'
+        avatar: profile.avatar || '🦦',
+        hearts: profile.hearts || 5,
+        gems: profile.gems || 0,
+        streak_freezes: profile.streak_freezes || 0
       },
       progress: {
         examDone: !!progress.examDone,
-        lessonsDone: (progress.lessonsDone || []).map(Number),
+        lessonsDone: Array.isArray(progress.lessonsDone) ? progress.lessonsDone.slice() : [],
         xp: progress.xp || 0,
         streak: progress.streak || 0,
         lastPPM: progress.lastPPM || 0,
@@ -243,8 +246,13 @@ var KIV = (function () {
      Cálculos de presentación (no otorgan nada)
      ---------------------------------------------------------- */
   function overall(p) {
-    var done = (p.examDone ? 1 : 0) + (p.lessonsDone ? p.lessonsDone.length : 0);
-    return Math.min(100, Math.round((done / 9) * 100));
+    var done = (p.examDone ? 1 : 0);
+    if (p.lessonsDone) {
+      p.lessonsDone.forEach(function (l) {
+        done += (l && l.crowns) ? l.crowns : (l ? 1 : 0);
+      });
+    }
+    return Math.min(100, Math.round((done / 25) * 100));
   }
   function levelInfo(xp) {
     var levels = [0, 100, 250, 450, 700, 1000, 1400, 1900, 2500, 3200];
@@ -266,7 +274,8 @@ var KIV = (function () {
   }
   function isLessonUnlocked(n, p) {
     if (n === 1) return !!p.examDone;
-    return p.lessonsDone.indexOf(n - 1) !== -1;
+    var prev = p.lessonsDone ? p.lessonsDone.find(function (l) { return l && l.lesson === n - 1; }) : null;
+    return prev && prev.crowns >= 1;
   }
 
   /* ----------------------------------------------------------
